@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FicroKanSharp", "FicroKanSharp\FicroKanSharp.fsproj", "{5CC2EFDA-B0BA-48EA-B7D4-102FFF239ED9}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FicroKanSharp.Test", "FicroKanSharp.Test\FicroKanSharp.Test.fsproj", "{8F5B2B07-763B-4501-9E0E-3DB5B319DD7B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5CC2EFDA-B0BA-48EA-B7D4-102FFF239ED9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CC2EFDA-B0BA-48EA-B7D4-102FFF239ED9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CC2EFDA-B0BA-48EA-B7D4-102FFF239ED9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CC2EFDA-B0BA-48EA-B7D4-102FFF239ED9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F5B2B07-763B-4501-9E0E-3DB5B319DD7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F5B2B07-763B-4501-9E0E-3DB5B319DD7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F5B2B07-763B-4501-9E0E-3DB5B319DD7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F5B2B07-763B-4501-9E0E-3DB5B319DD7B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
