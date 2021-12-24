@@ -6,6 +6,7 @@
 
     <ItemGroup>
         <Compile Include="TestExamples.fs" />
+        <Compile Include="Arithmetic.fs" />
     </ItemGroup>
 
     <ItemGroup>
