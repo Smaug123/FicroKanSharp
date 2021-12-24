@@ -1,6 +1,6 @@
 ﻿namespace FicroKanSharp
 
-type Variable = private | VariableCount of int
+type Variable = internal | VariableCount of int
 
 [<RequireQualifiedAccess>]
 module private Variable =
@@ -16,9 +16,10 @@ type Goal =
     | Disj of Goal * Goal
     | Conj of Goal * Goal
     | Fresh of (Variable -> Goal)
+    | Delay of (unit -> Goal)
 
 type State =
-    private
+    internal
         {
             Substitution : Map<Variable, Term>
             VariableCounter : Variable
@@ -56,10 +57,18 @@ module Stream =
         | Stream.Nonempty (fst, rest) ->
             mplus (g fst) (bind rest g)
 
+    let rec peel (s : Stream) : (Map<Variable, Term> * Stream) option =
+        match s with
+        | Stream.Empty -> None
+        | Stream.Nonempty (fst, rest) -> Some (fst.Substitution, rest)
+        | Stream.Procedure p -> peel (p ())
+
 [<RequireQualifiedAccess>]
 module Goal =
     let callFresh (f : Variable -> Goal) =
         Goal.Fresh f
+
+    let delay g = Goal.Delay g
 
     let disj (goal1 : Goal) (goal2 : Goal) : Goal =
         Goal.Disj (goal1, goal2)
@@ -118,3 +127,5 @@ module Goal =
             Stream.mplus (evaluate goal1 state) (evaluate goal2 state)
         | Goal.Conj (goal1, goal2) ->
             Stream.bind (evaluate goal1 state) (evaluate goal2)
+        | Goal.Delay g ->
+            Stream.Procedure (fun () -> evaluate (g ()) state)
