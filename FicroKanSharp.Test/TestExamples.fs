@@ -24,6 +24,7 @@ module TestThing =
         | Some (s, rest) ->
 
         s
+        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -36,6 +37,7 @@ module TestThing =
         | Some (s, rest) ->
 
         s
+        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -59,6 +61,7 @@ module TestThing =
         | Some (s, rest) ->
 
         s
+        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -82,6 +85,7 @@ module TestThing =
         | Some (s, rest) ->
 
         s
+        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -93,6 +97,7 @@ module TestThing =
         | Some (s, rest) ->
 
         s
+        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -104,6 +109,7 @@ module TestThing =
         | Some (s, _rest) ->
 
             s
+            |> Map.map (fun _ -> TypedTerm.force<int>)
             |> Map.toList
             |> shouldEqual
                 [
@@ -128,6 +134,7 @@ module TestThing =
         | Some (s, rest) ->
 
         s
+        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -139,6 +146,7 @@ module TestThing =
         | Some (s, rest) ->
 
         s
+        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -150,6 +158,7 @@ module TestThing =
         | Some (s, rest) ->
 
         s
+        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -161,6 +170,7 @@ module TestThing =
         | Some (s, _rest) ->
 
             s
+            |> Map.map (fun _ -> TypedTerm.force<int>)
             |> Map.toList
             |> shouldEqual
                 [
