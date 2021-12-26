@@ -77,8 +77,7 @@ module TestThing =
         let rec fives (x : Variable) =
             (Goal.disj (Goal.equiv' (Term.Variable x) (Term.Symbol (5, []))) (Goal.delay (fun () -> fives x)))
 
-        let u =
-            Goal.evaluate (Goal.callFresh fives)
+        let u = Goal.evaluate (Goal.callFresh fives)
 
         match u |> Stream.peel with
         | None -> failwith "oh no"

@@ -17,19 +17,19 @@ module NotWorking =
         let succ (x : TypedTerm<Int>) : TypedTerm<Int> =
             match x with
             // Little efficiency saving
-            | TypedTerm.Literal (Int.Pure x) ->
-                TypedTerm.Literal (x + 1 |> Int.Pure)
-            | _ ->
-                TypedTerm.Literal (Int.Succ x)
+            | TypedTerm.Literal (Int.Pure x) -> TypedTerm.Literal (x + 1 |> Int.Pure)
+            | _ -> TypedTerm.Literal (Int.Succ x)
 
         let rec ofInt (n : int) : TypedTerm<Int> = Int.Pure n |> TypedTerm.Literal
 
         let rec equal (x : Int) (y : Int) : Goal =
             match x, y with
             | Int.Pure x, Int.Pure y ->
-                if x = y then Goal.always else Goal.never
-            | Int.Succ x, Int.Succ y ->
-                equal x y
+                if x = y then
+                    Goal.always
+                else
+                    Goal.never
+            | Int.Succ x, Int.Succ y -> equal x y
             | TypedTerm.Literal (Int.Pure x), TypedTerm.Literal (Int.Succ y) ->
                 Goal.delay (fun () -> equal (TypedTerm.Literal (Int.Pure (x - 1))) y)
             | TypedTerm.Literal (Int.Succ x), TypedTerm.Literal (Int.Pure y) ->
@@ -40,14 +40,11 @@ module NotWorking =
             let succCase =
                 TypedTerm.Goal.callFresh (fun n ->
                     TypedTerm.Goal.callFresh (fun m ->
-                        Goal.conj
-                            (equal x (succ n))
-                            (Goal.conj (equal z (succ m)) (Goal.delay (fun () -> pluso n y m)))
+                        Goal.conj (equal x (succ n)) (Goal.conj (equal z (succ m)) (Goal.delay (fun () -> pluso n y m)))
                     )
                 )
 
-            let zeroCase =
-                Goal.conj (equal x zero) (equal y z)
+            let zeroCase = Goal.conj (equal x zero) (equal y z)
 
             Goal.disj zeroCase succCase
 
@@ -70,9 +67,7 @@ module NotWorking =
                         )
                     )
 
-                Goal.conj
-                    (equal (ofInt 2) (succ n))
-                    (Goal.conj (equal (ofInt 4) (succ m)) delayed)
+                Goal.conj (equal (ofInt 2) (succ n)) (Goal.conj (equal (ofInt 4) (succ m)) delayed)
             )
         )
         |> Goal.evaluate
@@ -127,4 +122,3 @@ module NotWorking =
                     VariableCount 4, TypedTerm.compile (ofInt 2)
                 ]
         )
-

@@ -19,4 +19,4 @@ module internal Reflection =
 
         fun ts vs ->
             mi.MakeGenericMethod (ts |> Array.ofSeq)
-            |> fun mi -> mi.Invoke(null, vs |> Array.ofSeq)
+            |> fun mi -> mi.Invoke (null, vs |> Array.ofSeq)

@@ -15,14 +15,21 @@ module Goal =
     /// Boolean "and": both goals must be satisfied simultaneously.
     let conj (goal1 : Goal) (goal2 : Goal) : Goal = Goal.Conj (goal1, goal2)
 
-    let equiv (term1 : UntypedTerm) (term2 : UntypedTerm) : Goal =
-        Goal.Equiv (term1, term2)
+    let equiv (term1 : UntypedTerm) (term2 : UntypedTerm) : Goal = Goal.Equiv (term1, term2)
 
     let equiv'<'a, 'b when 'a : equality and 'b : equality> (term1 : 'a Term) (term2 : 'b Term) : Goal =
         equiv (UntypedTerm.make term1) (UntypedTerm.make term2)
 
     let never : Goal =
-        equiv (Term.Symbol ("_internal", []) |> UntypedTerm.make) (Term.Symbol ("_internal", [ Term.Symbol ("_internal", []) |> UntypedTerm.make ]) |> UntypedTerm.make)
+        equiv
+            (Term.Symbol ("_internal", []) |> UntypedTerm.make)
+            (Term.Symbol (
+                "_internal",
+                [
+                    Term.Symbol ("_internal", []) |> UntypedTerm.make
+                ]
+             )
+             |> UntypedTerm.make)
 
     let always : Goal =
         equiv (Term.Symbol ("_internal", []) |> UntypedTerm.make) (Term.Symbol ("_internal", []) |> UntypedTerm.make)
@@ -32,8 +39,7 @@ module Goal =
         | Term.Variable u as x ->
             match Map.tryFind u s.Substitution with
             | None -> x |> UntypedTerm.make
-            | Some subst ->
-                subst
+            | Some subst -> subst
         | u -> u |> UntypedTerm.make
 
     let private extend<'a when 'a : equality> (v : Variable) (t : Term<'a>) (s : State) =
@@ -59,7 +65,12 @@ module Goal =
             }
             |> arg1.Apply
 
-    and private unify<'a, 'b when 'a : equality and 'b : equality> (u : 'a Term) (v : 'b Term) (s : State) : State option =
+    and private unify<'a, 'b when 'a : equality and 'b : equality>
+        (u : 'a Term)
+        (v : 'b Term)
+        (s : State)
+        : State option
+        =
         let (UntypedTerm u) = walk u s
         let (UntypedTerm v) = walk v s
 
@@ -72,12 +83,15 @@ module Goal =
                         | Term.Variable u, v -> extend u v s |> Some
                         | u, Term.Variable v -> extend v u s |> Some
                         | Term.Symbol (name1, args1), Term.Symbol (name2, args2) ->
-                            if name1.GetType () <> name2.GetType () then None else
-                            let name2 = unbox name2
-                            if (name1 <> name2) || (args1.Length <> args2.Length) then
+                            if name1.GetType () <> name2.GetType () then
                                 None
                             else
-                                unifyList args1 args2 s
+                                let name2 = unbox name2
+
+                                if (name1 <> name2) || (args1.Length <> args2.Length) then
+                                    None
+                                else
+                                    unifyList args1 args2 s
 
                         | _, _ -> None
                 }
