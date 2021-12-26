@@ -2,6 +2,17 @@
 
 A microKanren implementation in F#.
 
+# Structure
+
+There is a tiny untyped core, true to the spirit of the original.
+Extensions are implemented on top of this.
+
+## Extensions
+
+* A couple of reifiers: `Stream.peel` itself is a trivial "tell me everything" reifier, but the usual one is `Reify.withRespectToFirst`, which assumes you want the first variable and substitutes all other variables in it.
+* A typed term and goal language, which is aware of F# unions, but is not yet as expressive as I would like.
+
+
 # Development tips
 
 There are pull request checks on this repo, enforcing [Fantomas](https://github.com/fsprojects/fantomas/)-compliant formatting.
