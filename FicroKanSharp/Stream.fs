@@ -34,3 +34,13 @@ module Stream =
             | Stream.Procedure p -> go acc (p ())
 
         go [] s |> List.rev
+
+    let take (n : int) (s : Stream) : Map<Variable, UntypedTerm> list =
+        let rec go acc n s =
+            if n = 0 then acc else
+            match s with
+            | Stream.Empty -> acc
+            | Stream.Nonempty (fst, rest) -> go (fst.Substitution :: acc) (n - 1) rest
+            | Stream.Procedure p -> go acc n (p ())
+
+        go [] n s |> List.rev

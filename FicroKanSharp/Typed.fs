@@ -13,18 +13,42 @@ module TypedTerm =
     let variable<'a> (t : Variable) : TypedTerm<'a> =
         TypedTerm.Term (UntypedTerm.make (Term.Variable t : Term<unit>))
 
-    let private toUntypedLiteral<'a when 'a : equality> (t : 'a) : UntypedTerm =
-        Term.Symbol ((typeof<'a>, t), [])
-        |> UntypedTerm.make
+    let literal<'a> (t : 'a) : TypedTerm<'a> =
+        TypedTerm.Literal t
 
     let private untypedTerm : Type -> obj -> UntypedTerm =
         let m = Reflection.invokeStaticMethod <@ UntypedTerm.make @>
         fun tl o -> m [tl] [o] |> unbox
-    let private ofLiteral : Type -> obj -> UntypedTerm =
+
+    let rec private toUntypedLiteral<'a when 'a : equality> (t : 'a) : UntypedTerm =
+        let ty = typeof<'a>
+        if ty = typeof<Variable> then
+            UntypedTerm.make<unit> (Term.Variable (unbox t))
+        elif FSharpType.IsUnion ty then
+            let fieldU, valuesU = FSharpValue.GetUnionFields (t, typeof<'a>)
+            let toTermList (o : obj []) : UntypedTerm list =
+                o
+                |> List.ofArray
+                |> List.map (fun (o : obj) ->
+                    let ty = o.GetType ()
+                    if ty.BaseType.IsGenericType && ty.BaseType.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>>.GetGenericTypeDefinition () then
+                        o
+                        |> compileUntyped ty.GenericTypeArguments.[0]
+                    else
+                        ofLiteral ty o
+                )
+            let valuesU = toTermList valuesU
+            let td = typedefof<'a>
+            Term.Symbol ((td, fieldU.Name), valuesU)
+            |> UntypedTerm.make
+        else
+            UntypedTerm.make (Term.Symbol ((ty, t), []))
+
+    and private ofLiteral : Type -> obj -> UntypedTerm =
         let m = Reflection.invokeStaticMethod <@ toUntypedLiteral @>
         fun tl o -> m [tl] [o] |> unbox
 
-    let rec compileUntyped : Type -> obj -> UntypedTerm =
+    and private compileUntyped : Type -> obj -> UntypedTerm =
         let m = Reflection.invokeStaticMethod <@ compile @>
         fun tl o -> m [tl] [o] |> unbox
 
@@ -32,21 +56,12 @@ module TypedTerm =
         match t with
         | TypedTerm.Term t -> t
         | TypedTerm.Literal u ->
-            if FSharpType.IsUnion typeof<'a> then
-                let fieldU, valuesU = FSharpValue.GetUnionFields (u, typeof<'a>)
-                let toTermList (o : obj []) : UntypedTerm list =
-                    o
-                    |> List.ofArray
-                    |> List.map (fun (o : obj) ->
-                        let ty = o.GetType ()
-                        if ty.IsGenericType && ty.BaseType.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>>.GetGenericTypeDefinition () then
-                            o
-                            |> compileUntyped ty.GenericTypeArguments.[0]
-                        else
-                            ofLiteral ty o
-                    )
-                let valuesU = toTermList valuesU
-                Term.Symbol ((typeof<'a>, fieldU.Name), valuesU)
-                |> UntypedTerm.make
-            else
-                failwith $"Unsupported type: {typeof<'a>}"
+            toUntypedLiteral u
+
+    [<RequireQualifiedAccess>]
+    module Goal =
+        let callFresh<'a> (f : TypedTerm<'a> -> Goal) : Goal =
+            Goal.callFresh (fun v -> f (variable<'a> v))
+
+        let equiv (t1 : TypedTerm<'a>) (t2 : TypedTerm<'a>) : Goal =
+            Goal.equiv (compile t1) (compile t2)

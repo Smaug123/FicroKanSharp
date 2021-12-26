@@ -7,7 +7,7 @@ open Xunit
 module Arithmetic =
 
     [<Fact>]
-    let ``Arithmetic example, hand-rolled`` () =
+    let ``Arithmetic example, untyped`` () =
         let zero : Term<string> = Term.Symbol ("zero", [])
 
         let succ (x : Term<string>) : Term<string> =
@@ -101,17 +101,47 @@ module Arithmetic =
         | Succ of TypedTerm<Nat>
 
     [<Fact>]
-    let ``Arithmetic example, hand-rolled, with reflection`` () =
+    let ``Arithmetic example, typed`` () =
         let rec ofInt (n : int) : TypedTerm<Nat> =
             if n = 0 then
                 Nat.Zero
-                |> TypedTerm.Literal
+                |> TypedTerm.literal
             else
                 Nat.Succ (ofInt (n - 1))
-                |> TypedTerm.Literal
+                |> TypedTerm.literal
 
-        let succ (n : TypedTerm<Nat>) = Nat.Succ n |> TypedTerm.Literal
-        let zero = Nat.Zero |> TypedTerm.Literal
+        let succ (n : TypedTerm<Nat>) = Nat.Succ n |> TypedTerm.literal
+        let zero = Nat.Zero |> TypedTerm.literal
+
+        let rec numeralo (x : TypedTerm<Nat>) : Goal =
+            Goal.disj
+                (TypedTerm.Goal.equiv x (TypedTerm.literal Nat.Zero))
+                (TypedTerm.Goal.callFresh (fun y -> Goal.conj (Goal.delay (fun () -> numeralo y)) (TypedTerm.Goal.equiv x (succ y))))
+
+        // By the power of microKanren, let some numerals be manifested!
+
+        Goal.evaluate (TypedTerm.Goal.callFresh numeralo)
+        |> Stream.take 4
+        |> shouldEqual [
+            Map.ofList [
+                VariableCount 0, TypedTerm.literal Nat.Zero |> TypedTerm.compile
+            ]
+            Map.ofList [
+                VariableCount 0, TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 1))) |> TypedTerm.compile
+                VariableCount 1, TypedTerm.literal Nat.Zero |> TypedTerm.compile
+            ]
+            Map.ofList [
+                VariableCount 0, TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 1))) |> TypedTerm.compile
+                VariableCount 1, TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 2))) |> TypedTerm.compile
+                VariableCount 2, TypedTerm.literal Nat.Zero |> TypedTerm.compile
+            ]
+            Map.ofList [
+                VariableCount 0, TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 1))) |> TypedTerm.compile
+                VariableCount 1, TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 2))) |> TypedTerm.compile
+                VariableCount 2, TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 3))) |> TypedTerm.compile
+                VariableCount 3, TypedTerm.literal Nat.Zero |> TypedTerm.compile
+            ]
+        ]
 
         // "pluso x y z" is "x + y == z".
         let rec pluso (x : TypedTerm<Nat>) (y : TypedTerm<Nat>) (z : TypedTerm<Nat>) : Goal =

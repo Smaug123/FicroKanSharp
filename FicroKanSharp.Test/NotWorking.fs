@@ -6,46 +6,40 @@ open FsUnitTyped
 
 module NotWorking =
 
-    type LiteralNat =
-        | LiteralNat of int
-        | Succ of Term<LiteralNat>
+    type Int =
+        | Pure of int
+        | Succ of TypedTerm<Int>
 
     [<Fact>]
     let ``Arithmetic example using literals`` () =
-        let zero : Term<LiteralNat> = Term.ofLiteral (LiteralNat 0)
+        let zero = TypedTerm.literal (Int.Pure 0)
 
-        let succ (x : Term<LiteralNat>) : Term<LiteralNat> =
-            Term.ofLiteral (LiteralNat.Succ x)
+        let succ (x : TypedTerm<Int>) : TypedTerm<Int> =
+            match x with
+            // Little efficiency saving
+            | TypedTerm.Literal (Int.Pure x) ->
+                TypedTerm.Literal (x + 1 |> Int.Pure)
+            | _ ->
+                TypedTerm.Literal (Int.Succ x)
 
-        let rec ofInt (n : int) : Term<LiteralNat> = LiteralNat n |> Term.ofLiteral
+        let rec ofInt (n : int) : TypedTerm<Int> = Int.Pure n |> TypedTerm.Literal
 
-        let rec equal (x : Term<LiteralNat>) (y : Term<LiteralNat>) : Goal =
+        let rec equal (x : Int) (y : Int) : Goal =
             match x, y with
-            | Term.Literal (LiteralNat _) as x, (Term.Literal (LiteralNat _) as y) ->
-                Goal.equiv x y
-            | Term.Literal (LiteralNat x), Term.Literal (Succ t) ->
-                if x = 0 then Goal.never else
-                equal (Term.Literal (LiteralNat (x - 1))) t
-            | Term.Literal (Succ x), Term.Literal (LiteralNat t) ->
-                if t = 0 then Goal.never else
-                equal x (Term.Literal (LiteralNat (t - 1)))
-            | Term.Literal (Succ x), Term.Literal (Succ y) ->
+            | Int.Pure x, Int.Pure y ->
+                if x = y then Goal.always else Goal.never
+            | Int.Succ x, Int.Succ y ->
                 equal x y
-            | Term.Symbol _, _
-            | _, Term.Symbol _ ->
-                failwith "hmmm"
-            | x, (Term.Variable _ as y) -> Goal.equiv x y
-            | Term.Variable _ as x, y -> Goal.equiv x y
+            | TypedTerm.Literal (Int.Pure x), TypedTerm.Literal (Int.Succ y) ->
+                Goal.delay (fun () -> equal (TypedTerm.Literal (Int.Pure (x - 1))) y)
+            | TypedTerm.Literal (Int.Succ x), TypedTerm.Literal (Int.Pure y) ->
+                Goal.delay (fun () -> equal x (TypedTerm.Literal (Int.Pure (y - 1))))
 
         // "pluso x y z" is "x + y == z".
-        let rec pluso (x : Term<LiteralNat>) (y : Term<LiteralNat>) (z : Term<LiteralNat>) : Goal =
+        let rec pluso (x : TypedTerm<Int>) (y : TypedTerm<Int>) (z : TypedTerm<Int>) : Goal =
             let succCase =
-                Goal.callFresh (fun n ->
-                    let n = Term.Variable n
-
-                    Goal.callFresh (fun m ->
-                        let m = Term.Variable m
-
+                TypedTerm.Goal.callFresh (fun n ->
+                    TypedTerm.Goal.callFresh (fun m ->
                         Goal.conj
                             (equal x (succ n))
                             (Goal.conj (equal z (succ m)) (Goal.delay (fun () -> pluso n y m)))
@@ -58,17 +52,17 @@ module NotWorking =
             Goal.disj zeroCase succCase
 
         Goal.callFresh (fun n ->
-            let n = Term.Variable n // should be 1
+            let n = TypedTerm.variable n // should be 1
 
             Goal.callFresh (fun m ->
-                let m = Term.Variable m // should be 3
+                let m = TypedTerm.variable m // should be 3
 
                 let delayed =
                     Goal.callFresh (fun a ->
-                        let a = Term.Variable a // should be 0
+                        let a = TypedTerm.variable a // should be 0
 
                         Goal.callFresh (fun b ->
-                            let b = Term.Variable b // should be 2
+                            let b = TypedTerm.variable b // should be 2
 
                             Goal.conj
                                 (equal n (succ a))
@@ -92,45 +86,45 @@ module NotWorking =
         |> printfn "%O"
 
         // Evaluate 1 + 1
-        Goal.evaluate (Goal.callFresh (fun z -> pluso (ofInt 1) (ofInt 1) (Term.Variable z)))
+        Goal.evaluate (Goal.callFresh (fun z -> pluso (ofInt 1) (ofInt 1) (TypedTerm.variable z)))
         |> Stream.toList
         |> List.exactlyOne
         |> shouldEqual (
             Map.ofList
                 [
-                    VariableCount 0, TypedTerm.make (succ (Term.Variable (VariableCount 2)))
-                    VariableCount 1, TypedTerm.make (ofInt 0)
-                    VariableCount 2, TypedTerm.make (ofInt 1)
+                    VariableCount 0, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 2)))
+                    VariableCount 1, TypedTerm.compile (ofInt 0)
+                    VariableCount 2, TypedTerm.compile (ofInt 1)
                 ]
         )
 
         // Evaluate 2 + 2
-        Goal.evaluate (Goal.callFresh (fun z -> pluso (ofInt 2) (ofInt 2) (Term.Variable z)))
+        Goal.evaluate (Goal.callFresh (fun z -> pluso (ofInt 2) (ofInt 2) (TypedTerm.variable z)))
         |> Stream.toList
         |> List.exactlyOne
         |> shouldEqual (
             Map.ofList
                 [
-                    VariableCount 0, TypedTerm.make (succ (Term.Variable (VariableCount 2)))
-                    VariableCount 1, TypedTerm.make (ofInt 1)
-                    VariableCount 2, TypedTerm.make (succ (Term.Variable (VariableCount 4)))
-                    VariableCount 3, TypedTerm.make zero
-                    VariableCount 4, TypedTerm.make (ofInt 2)
+                    VariableCount 0, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 2)))
+                    VariableCount 1, TypedTerm.compile (ofInt 1)
+                    VariableCount 2, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 4)))
+                    VariableCount 3, TypedTerm.compile zero
+                    VariableCount 4, TypedTerm.compile (ofInt 2)
                 ]
         )
 
         // Find n such that n + n = 4
-        Goal.evaluate (Goal.callFresh (fun z -> pluso (Term.Variable z) (Term.Variable z) (ofInt 4)))
+        Goal.evaluate (Goal.callFresh (fun z -> pluso (TypedTerm.variable z) (TypedTerm.variable z) (ofInt 4)))
         |> Stream.toList
         |> List.exactlyOne
         |> shouldEqual (
             Map.ofList
                 [
-                    VariableCount 0, TypedTerm.make (succ (Term.Variable (VariableCount 1)))
-                    VariableCount 1, TypedTerm.make (succ (Term.Variable (VariableCount 3)))
-                    VariableCount 2, TypedTerm.make (ofInt 3)
-                    VariableCount 3, TypedTerm.make zero
-                    VariableCount 4, TypedTerm.make (ofInt 2)
+                    VariableCount 0, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 1)))
+                    VariableCount 1, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 3)))
+                    VariableCount 2, TypedTerm.compile (ofInt 3)
+                    VariableCount 3, TypedTerm.compile zero
+                    VariableCount 4, TypedTerm.compile (ofInt 2)
                 ]
         )
 

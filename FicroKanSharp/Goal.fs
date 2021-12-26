@@ -24,11 +24,14 @@ module Goal =
     let never : Goal =
         equiv (Term.Symbol ("_internal", []) |> UntypedTerm.make) (Term.Symbol ("_internal", [ Term.Symbol ("_internal", []) |> UntypedTerm.make ]) |> UntypedTerm.make)
 
+    let always : Goal =
+        equiv (Term.Symbol ("_internal", []) |> UntypedTerm.make) (Term.Symbol ("_internal", []) |> UntypedTerm.make)
+
     let private walk<'a when 'a : equality> (u : Term<'a>) (s : State) : UntypedTerm =
         match u with
-        | Term.Variable u ->
+        | Term.Variable u as x ->
             match Map.tryFind u s.Substitution with
-            | None -> Term.Variable u |> UntypedTerm.make
+            | None -> x |> UntypedTerm.make
             | Some subst ->
                 subst
         | u -> u |> UntypedTerm.make
@@ -38,8 +41,25 @@ module Goal =
             Substitution = Map.add v (TermCrate.make t |> UntypedTerm) s.Substitution
         }
 
-    let rec private unify<'a, 'b when 'a : equality and 'b : equality> (u : 'a Term) (v : 'b Term) (s : State) : State option =
-        printfn $"Unifying terms {u}, {v}"
+    let rec private unifyList (args1 : _) (args2 : _) (state : State) : State option =
+        match args1, args2 with
+        | [], [] -> Some state
+        | _, []
+        | [], _ -> None
+        | UntypedTerm arg1 :: args1, UntypedTerm arg2 :: args2 ->
+            { new TermEvaluator<_> with
+                member _.Eval<'t when 't : equality> (arg1 : Term<'t>) =
+                    { new TermEvaluator<_> with
+                        member _.Eval<'u when 'u : equality> (arg2 : Term<'u>) =
+                            match unify arg1 arg2 state with
+                            | None -> None
+                            | Some state -> unifyList args1 args2 state
+                    }
+                    |> arg2.Apply
+            }
+            |> arg1.Apply
+
+    and private unify<'a, 'b when 'a : equality and 'b : equality> (u : 'a Term) (v : 'b Term) (s : State) : State option =
         let (UntypedTerm u) = walk u s
         let (UntypedTerm v) = walk v s
 
@@ -53,29 +73,11 @@ module Goal =
                         | u, Term.Variable v -> extend v u s |> Some
                         | Term.Symbol (name1, args1), Term.Symbol (name2, args2) ->
                             if name1.GetType () <> name2.GetType () then None else
-                            let name2 = unbox name1
+                            let name2 = unbox name2
                             if (name1 <> name2) || (args1.Length <> args2.Length) then
                                 None
                             else
-                                let rec go state args1 args2 =
-                                    match args1, args2 with
-                                    | [], [] -> Some state
-                                    | _, []
-                                    | [], _ -> None
-                                    | UntypedTerm arg1 :: args1, UntypedTerm arg2 :: args2 ->
-                                        { new TermEvaluator<_> with
-                                            member _.Eval<'t when 't : equality> (arg1 : Term<'t>) =
-                                                { new TermEvaluator<_> with
-                                                    member _.Eval<'u when 'u : equality> (arg2 : Term<'u>) =
-                                                        match unify arg1 arg2 s with
-                                                        | None -> None
-                                                        | Some s -> go s args1 args2
-                                                }
-                                                |> arg2.Apply
-                                        }
-                                        |> arg1.Apply
-
-                                go s args1 args2
+                                unifyList args1 args2 s
 
                         | _, _ -> None
                 }
