@@ -7,6 +7,9 @@
     <ItemGroup>
         <Compile Include="TestExamples.fs" />
         <Compile Include="Arithmetic.fs" />
+        <None Include="NotWorking.fs" />
+        <Compile Include="Geometry.fs" />
+        <Compile Include="Recursive.fs" />
     </ItemGroup>
 
     <ItemGroup>

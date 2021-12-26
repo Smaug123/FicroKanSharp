@@ -10,26 +10,25 @@ module TestThing =
     let ``Example from the docs`` () : unit =
         let aAndB =
             Goal.conj
-                (Goal.callFresh (fun x -> Goal.equiv (Term.Variable x) (Term.Literal 7)))
+                (Goal.callFresh (fun x -> Goal.equiv (Term.Variable x) (Term.Symbol (7, []))))
                 (Goal.callFresh (fun x ->
                     Goal.disj
-                        (Goal.equiv (Term.Variable x) (Term.Literal 5))
-                        (Goal.equiv (Term.Variable x) (Term.Literal 6))
+                        (Goal.equiv (Term.Variable x) (Term.Symbol (5, [])))
+                        (Goal.equiv (Term.Variable x) (Term.Symbol (6, [])))
                 ))
 
-        let u = Goal.evaluate aAndB State.empty
+        let u = Goal.evaluate aAndB
 
         match u |> Stream.peel with
         | None -> failwith "oh no"
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
-                Variable.VariableCount 0, Term.Literal 7
-                Variable.VariableCount 1, Term.Literal 5
+                Variable.VariableCount 0, Term.Symbol (7, [])
+                Variable.VariableCount 1, Term.Symbol (5, [])
             ]
 
         match rest |> Stream.peel with
@@ -37,12 +36,11 @@ module TestThing =
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
-                Variable.VariableCount 0, Term.Literal 7
-                Variable.VariableCount 1, Term.Literal 6
+                Variable.VariableCount 0, Term.Symbol (7, [])
+                Variable.VariableCount 1, Term.Symbol (6, [])
             ]
 
         match rest |> Stream.peel with
@@ -52,20 +50,19 @@ module TestThing =
     [<Fact>]
     let ``Another example`` () =
         let aAndB =
-            (Goal.callFresh (fun x -> Goal.equiv (Term.Variable x) (Term.Literal 5)))
+            (Goal.callFresh (fun x -> Goal.equiv (Term.Variable x) (Term.Symbol (5, []))))
 
-        let u = Goal.evaluate aAndB State.empty
+        let u = Goal.evaluate aAndB
 
         match u |> Stream.peel with
         | None -> failwith "oh no"
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
-                Variable.VariableCount 0, Term.Literal 5
+                Variable.VariableCount 0, Term.Symbol (5, [])
             ]
 
         match Stream.peel rest with
@@ -75,21 +72,19 @@ module TestThing =
     [<Fact>]
     let ``Recursive example`` () =
         let rec fives (x : Variable) =
-            (Goal.disj (Goal.equiv (Term.Variable x) (Term.Literal 5)) (Goal.delay (fun () -> fives x)))
+            (Goal.disj (Goal.equiv (Term.Variable x) (Term.Symbol (5, []))) (Goal.delay (fun () -> fives x)))
 
-        let u =
-            Goal.evaluate (Goal.callFresh fives) State.empty
+        let u = Goal.evaluate (Goal.callFresh fives)
 
         match u |> Stream.peel with
         | None -> failwith "oh no"
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
-                Variable.VariableCount 0, Term.Literal 5
+                Variable.VariableCount 0, Term.Symbol (5, [])
             ]
 
         match Stream.peel rest with
@@ -97,11 +92,10 @@ module TestThing =
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
-                Variable.VariableCount 0, Term.Literal 5
+                Variable.VariableCount 0, Term.Symbol (5, [])
             ]
 
         match Stream.peel rest with
@@ -109,36 +103,34 @@ module TestThing =
         | Some (s, _rest) ->
 
             s
-            |> Map.map (fun _ -> TypedTerm.force<int>)
             |> Map.toList
             |> shouldEqual
                 [
-                    Variable.VariableCount 0, Term.Literal 5
+                    Variable.VariableCount 0, Term.Symbol (5, [])
                 ]
 
     [<Fact>]
     let ``Another recursive example`` () =
         let rec fives (x : Variable) =
-            (Goal.disj (Goal.equiv (Term.Variable x) (Term.Literal 5)) (Goal.delay (fun () -> fives x)))
+            (Goal.disj (Goal.equiv (Term.Variable x) (Term.Symbol (5, []))) (Goal.delay (fun () -> fives x)))
 
         let rec sixes (x : Variable) =
-            (Goal.disj (Goal.equiv (Term.Variable x) (Term.Literal 6)) (Goal.delay (fun () -> sixes x)))
+            (Goal.disj (Goal.equiv (Term.Variable x) (Term.Symbol (6, []))) (Goal.delay (fun () -> sixes x)))
 
         let fivesAndSixes =
             Goal.callFresh (fun x -> Goal.disj (fives x) (sixes x))
 
-        let u = Goal.evaluate fivesAndSixes State.empty
+        let u = Goal.evaluate fivesAndSixes
 
         match u |> Stream.peel with
         | None -> failwith "oh no"
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
-                Variable.VariableCount 0, Term.Literal 5
+                Variable.VariableCount 0, Term.Symbol (5, [])
             ]
 
         match Stream.peel rest with
@@ -146,11 +138,10 @@ module TestThing =
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
-                Variable.VariableCount 0, Term.Literal 6
+                Variable.VariableCount 0, Term.Symbol (6, [])
             ]
 
         match Stream.peel rest with
@@ -158,11 +149,10 @@ module TestThing =
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> TypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
-                Variable.VariableCount 0, Term.Literal 5
+                Variable.VariableCount 0, Term.Symbol (5, [])
             ]
 
         match Stream.peel rest with
@@ -170,9 +160,8 @@ module TestThing =
         | Some (s, _rest) ->
 
             s
-            |> Map.map (fun _ -> TypedTerm.force<int>)
             |> Map.toList
             |> shouldEqual
                 [
-                    Variable.VariableCount 0, Term.Literal 6
+                    Variable.VariableCount 0, Term.Symbol (6, [])
                 ]

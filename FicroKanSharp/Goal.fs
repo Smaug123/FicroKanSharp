@@ -1,11 +1,13 @@
 namespace FicroKanSharp
 
+open FicroKanSharp
+
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Goal =
     let callFresh (f : Variable -> Goal) = Goal.Fresh f
 
-    let delay g = Goal.Delay g
+    let delay (g : unit -> Goal) = Goal.Fresh (fun _ -> g ())
 
     /// Boolean "or": either goal must be satisfied.
     let disj (goal1 : Goal) (goal2 : Goal) : Goal = Goal.Disj (goal1, goal2)
@@ -13,27 +15,39 @@ module Goal =
     /// Boolean "and": both goals must be satisfied simultaneously.
     let conj (goal1 : Goal) (goal2 : Goal) : Goal = Goal.Conj (goal1, goal2)
 
-    let equiv<'a when 'a : equality> (term1 : 'a Term) (term2 : 'a Term) : Goal =
-        TermPairCrate.make term1 term2 |> Goal.Equiv
+    let equiv (term1 : Term) (term2 : Term) : Goal = Goal.Equiv (term1, term2)
 
-    let private walk<'a> (u : Term<'a>) (s : State) : Term<'a> =
+    let never : Goal =
+        equiv (Term.Symbol ("_internal", [])) (Term.Symbol ("_internal", [ Term.Symbol ("_internal", []) ]))
+
+    let always : Goal =
+        equiv (Term.Symbol ("_internal", [])) (Term.Symbol ("_internal", []))
+
+    let private walk (u : Term) (s : State) : Term =
         match u with
-        | Term.Variable u ->
+        | Term.Variable u as x ->
             match Map.tryFind u s.Substitution with
-            | None -> Term.Variable u
-            | Some (TypedTerm subst) ->
-                { new TermEvaluator<_> with
-                    member _.Eval x = unbox x
-                }
-                |> subst.Apply
+            | None -> x
+            | Some subst -> subst
         | u -> u
 
-    let private extend<'a when 'a : equality> (v : Variable) (t : Term<'a>) (s : State) =
+    let private extend (v : Variable) (t : Term) (s : State) =
         { s with
-            Substitution = Map.add v (TermCrate.make t |> TypedTerm) s.Substitution
+            Substitution = Map.add v t s.Substitution
         }
 
-    let rec private unify<'a when 'a : equality> (u : 'a Term) (v : 'a Term) (s : State) : State option =
+    let rec private unifyList (args1 : _) (args2 : _) (state : State) : State option =
+        match args1, args2 with
+        | [], [] -> Some state
+        | _, []
+        | [], _ -> None
+        | arg1 :: args1, arg2 :: args2 ->
+
+        match unify arg1 arg2 state with
+        | None -> None
+        | Some state -> unifyList args1 args2 state
+
+    and private unify (u : Term) (v : Term) (s : State) : State option =
         let u = walk u s
         let v = walk v s
 
@@ -41,85 +55,36 @@ module Goal =
         | Term.Variable u, Term.Variable v when u = v -> s |> Some
         | Term.Variable u, v -> extend u v s |> Some
         | u, Term.Variable v -> extend v u s |> Some
-        | Term.Literal u, Term.Literal v -> if u = v then Some s else None
         | Term.Symbol (name1, args1), Term.Symbol (name2, args2) ->
-            if (name1 <> name2) || (args1.Length <> args2.Length) then
+            if name1.GetType () <> name2.GetType () then
                 None
             else
+                let name2 = unbox name2
 
-                let rec go state args1 args2 =
-                    match args1, args2 with
-                    | [], [] -> Some state
-                    | _, []
-                    | [], _ -> None
-                    | TypedTerm arg1 :: args1, TypedTerm arg2 :: args2 ->
-                        { new TermEvaluator<_> with
-                            member _.Eval<'t when 't : equality> (arg1 : Term<'t>) =
-                                { new TermEvaluator<_> with
-                                    member _.Eval<'u when 'u : equality> (arg2 : Term<'u>) =
-                                        if typeof<'t> = typeof<'u> then
-                                            match unify arg1 (arg2 |> unbox) state with
-                                            | None -> None
-                                            | Some s -> go s args1 args2
-                                        else
-                                            None
-                                }
-                                |> arg2.Apply
-                        }
-                        |> arg1.Apply
-
-                go s args1 args2
+                if (name1 <> name2) || (args1.Length <> args2.Length) then
+                    None
+                else
+                    unifyList args1 args2 s
 
         | _, _ -> None
 
-    let rec evaluate (goal : Goal) (state : State) : Stream =
+    let rec private evaluate' (goal : Goal) (state : State) : Stream =
         match goal with
-        | Goal.Equiv pair ->
-            { new TermPairEvaluator<_> with
-                member _.Eval u v =
-                    match unify u v state with
-                    | None -> Stream.empty
-                    | Some unification -> Stream.Nonempty (unification, Stream.empty)
-            }
-            |> pair.Apply
+        | Goal.Equiv (t1, t2) ->
+            match unify t1 t2 state with
+            | None -> Stream.empty
+            | Some unification -> Stream.Nonempty (unification, Stream.empty)
         | Goal.Fresh goal ->
             let newVar = state.VariableCounter
 
-            evaluate
-                (goal newVar)
-                { state with
-                    VariableCounter = Variable.incr state.VariableCounter
-                }
-        | Goal.Disj (goal1, goal2) -> Stream.union (evaluate goal1 state) (evaluate goal2 state)
-        | Goal.Conj (goal1, goal2) -> Stream.bind (evaluate goal1 state) (evaluate goal2)
-        | Goal.Delay g -> Stream.Procedure (fun () -> evaluate (g ()) state)
+            Stream.Procedure (fun () ->
+                evaluate'
+                    (goal newVar)
+                    { state with
+                        VariableCounter = Variable.incr state.VariableCounter
+                    }
+            )
+        | Goal.Disj (goal1, goal2) -> Stream.union (evaluate' goal1 state) (evaluate' goal2 state)
+        | Goal.Conj (goal1, goal2) -> Stream.bind (evaluate' goal1 state) (evaluate' goal2)
 
-(*
-    (dene (mK-reify s/c* )
-(map reify-state/1st-var s/c* ))
-(dene (reify-state/1st -var s/c)
-(let ((v (walk* (var 0) (car s/c))))
-(walk* v (reify-s v ' ()))))
-The reier here, mK-reify, reies a list of states s/c*
-by reifying each state's substitution with respect to the rst
-variable. The reify-s, reify-name, and walk* helpers are
-required for reify-state/1st-var.
-(dene (reify-s v s)
-(let ((v (walk v s)))
-(cond
-((var? v)
-(let ((n (reify-name (length s))))
-(cons `(, v . , n) s)))
-((pair? v) (reify-s (cdr v) (reify-s (car v) s)))
-(else s))))
-(dene (reify-name n)
-(stringsymbol
-(string - append "_" "." (numberstring n))))
-(dene (walk* v s)
-(let ((v (walk v s)))
-(cond
-((var? v) v)
-((pair? v) (cons (walk* (car v) s)
-(walk* (cdr v) s)))
-(else v))))
-*)
+    let evaluate (goal : Goal) = evaluate' goal State.empty
