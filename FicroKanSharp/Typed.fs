@@ -12,6 +12,7 @@ type internal TypeName<'a> =
         UserType : Type
         FieldValue : 'a
     }
+
     override this.ToString () =
         sprintf "%O<%s>" this.FieldValue this.UserType.Name
 
@@ -48,7 +49,13 @@ module TypedTerm =
             let valuesU = toTermList valuesU
             let td = typedefof<'a>
 
-            Term.Symbol ({ UserType = td ; FieldValue = fieldU.Name }, valuesU)
+            Term.Symbol (
+                {
+                    UserType = td
+                    FieldValue = fieldU.Name
+                },
+                valuesU
+            )
         else
             Term.Symbol ({ UserType = ty ; FieldValue = t }, [])
 
