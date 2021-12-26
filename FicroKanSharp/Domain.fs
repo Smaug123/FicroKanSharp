@@ -31,6 +31,13 @@ type Goal =
     | Conj of Goal * Goal
     | Fresh of (Variable -> Goal)
 
+    override this.ToString () =
+        match this with
+        | Fresh _ -> "<exists x such that...>"
+        | Conj (g1, g2) -> sprintf "((%O) AND (%O))" g1 g2
+        | Disj (g1, g2) -> sprintf "((%O) OR  (%O))" g1 g2
+        | Equiv (g1, g2) -> sprintf "(%O) == (%O)" g1 g2
+
 type internal State =
     {
         Substitution : Map<Variable, Term>
