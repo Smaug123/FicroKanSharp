@@ -7,6 +7,15 @@ type TypedTerm<'a> =
     | Term of Term
     | Literal of 'a
 
+type internal TypeName<'a> =
+    {
+        UserType : Type
+        FieldValue : 'a
+    }
+
+    override this.ToString () =
+        sprintf "%O<%s>" this.FieldValue this.UserType.Name
+
 [<RequireQualifiedAccess>]
 module TypedTerm =
 
@@ -40,9 +49,15 @@ module TypedTerm =
             let valuesU = toTermList valuesU
             let td = typedefof<'a>
 
-            Term.Symbol ((td, fieldU.Name), valuesU)
+            Term.Symbol (
+                {
+                    UserType = td
+                    FieldValue = fieldU.Name
+                },
+                valuesU
+            )
         else
-            Term.Symbol ((ty, t), [])
+            Term.Symbol ({ UserType = ty ; FieldValue = t }, [])
 
     and private ofLiteral : Type -> obj -> Term =
         let m =
