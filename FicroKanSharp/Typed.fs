@@ -10,8 +10,7 @@ type TypedTerm<'a> =
 [<RequireQualifiedAccess>]
 module TypedTerm =
 
-    let variable<'a> (t : Variable) : TypedTerm<'a> =
-        TypedTerm.Term (Term.Variable t)
+    let variable<'a> (t : Variable) : TypedTerm<'a> = TypedTerm.Term (Term.Variable t)
 
     let literal<'a> (t : 'a) : TypedTerm<'a> = TypedTerm.Literal t
 

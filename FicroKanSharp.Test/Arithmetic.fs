@@ -10,8 +10,7 @@ module Arithmetic =
     let ``Arithmetic example, untyped`` () =
         let zero : Term = Term.Symbol ("zero", [])
 
-        let succ (x : Term) : Term =
-            Term.Symbol ("succ", [ x ])
+        let succ (x : Term) : Term = Term.Symbol ("succ", [ x ])
 
         let rec ofInt (n : int) : Term =
             if n = 0 then

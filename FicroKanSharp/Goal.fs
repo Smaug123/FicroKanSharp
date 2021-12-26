@@ -18,14 +18,7 @@ module Goal =
     let equiv (term1 : Term) (term2 : Term) : Goal = Goal.Equiv (term1, term2)
 
     let never : Goal =
-        equiv
-            (Term.Symbol ("_internal", []))
-            (Term.Symbol (
-                "_internal",
-                [
-                    Term.Symbol ("_internal", [])
-                ]
-             ))
+        equiv (Term.Symbol ("_internal", [])) (Term.Symbol ("_internal", [ Term.Symbol ("_internal", []) ]))
 
     let always : Goal =
         equiv (Term.Symbol ("_internal", [])) (Term.Symbol ("_internal", []))
@@ -49,9 +42,10 @@ module Goal =
         | _, []
         | [], _ -> None
         | arg1 :: args1, arg2 :: args2 ->
-            match unify arg1 arg2 state with
-            | None -> None
-            | Some state -> unifyList args1 args2 state
+
+        match unify arg1 arg2 state with
+        | None -> None
+        | Some state -> unifyList args1 args2 state
 
     and private unify (u : Term) (v : Term) (s : State) : State option =
         let u = walk u s
