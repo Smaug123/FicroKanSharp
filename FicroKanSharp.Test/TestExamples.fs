@@ -10,11 +10,11 @@ module TestThing =
     let ``Example from the docs`` () : unit =
         let aAndB =
             Goal.conj
-                (Goal.callFresh (fun x -> Goal.equiv' (Term.Variable x) (Term.Symbol (7, []))))
+                (Goal.callFresh (fun x -> Goal.equiv (Term.Variable x) (Term.Symbol (7, []))))
                 (Goal.callFresh (fun x ->
                     Goal.disj
-                        (Goal.equiv' (Term.Variable x) (Term.Symbol (5, [])))
-                        (Goal.equiv' (Term.Variable x) (Term.Symbol (6, [])))
+                        (Goal.equiv (Term.Variable x) (Term.Symbol (5, [])))
+                        (Goal.equiv (Term.Variable x) (Term.Symbol (6, [])))
                 ))
 
         let u = Goal.evaluate aAndB
@@ -24,7 +24,6 @@ module TestThing =
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> UntypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -37,7 +36,6 @@ module TestThing =
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> UntypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -52,7 +50,7 @@ module TestThing =
     [<Fact>]
     let ``Another example`` () =
         let aAndB =
-            (Goal.callFresh (fun x -> Goal.equiv' (Term.Variable x) (Term.Symbol (5, []))))
+            (Goal.callFresh (fun x -> Goal.equiv (Term.Variable x) (Term.Symbol (5, []))))
 
         let u = Goal.evaluate aAndB
 
@@ -61,7 +59,6 @@ module TestThing =
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> UntypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -75,7 +72,7 @@ module TestThing =
     [<Fact>]
     let ``Recursive example`` () =
         let rec fives (x : Variable) =
-            (Goal.disj (Goal.equiv' (Term.Variable x) (Term.Symbol (5, []))) (Goal.delay (fun () -> fives x)))
+            (Goal.disj (Goal.equiv (Term.Variable x) (Term.Symbol (5, []))) (Goal.delay (fun () -> fives x)))
 
         let u = Goal.evaluate (Goal.callFresh fives)
 
@@ -84,7 +81,6 @@ module TestThing =
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> UntypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -96,7 +92,6 @@ module TestThing =
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> UntypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -108,7 +103,6 @@ module TestThing =
         | Some (s, _rest) ->
 
             s
-            |> Map.map (fun _ -> UntypedTerm.force<int>)
             |> Map.toList
             |> shouldEqual
                 [
@@ -118,10 +112,10 @@ module TestThing =
     [<Fact>]
     let ``Another recursive example`` () =
         let rec fives (x : Variable) =
-            (Goal.disj (Goal.equiv' (Term.Variable x) (Term.Symbol (5, []))) (Goal.delay (fun () -> fives x)))
+            (Goal.disj (Goal.equiv (Term.Variable x) (Term.Symbol (5, []))) (Goal.delay (fun () -> fives x)))
 
         let rec sixes (x : Variable) =
-            (Goal.disj (Goal.equiv' (Term.Variable x) (Term.Symbol (6, []))) (Goal.delay (fun () -> sixes x)))
+            (Goal.disj (Goal.equiv (Term.Variable x) (Term.Symbol (6, []))) (Goal.delay (fun () -> sixes x)))
 
         let fivesAndSixes =
             Goal.callFresh (fun x -> Goal.disj (fives x) (sixes x))
@@ -133,7 +127,6 @@ module TestThing =
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> UntypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -145,7 +138,6 @@ module TestThing =
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> UntypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -157,7 +149,6 @@ module TestThing =
         | Some (s, rest) ->
 
         s
-        |> Map.map (fun _ -> UntypedTerm.force<int>)
         |> Map.toList
         |> shouldEqual
             [
@@ -169,7 +160,6 @@ module TestThing =
         | Some (s, _rest) ->
 
             s
-            |> Map.map (fun _ -> UntypedTerm.force<int>)
             |> Map.toList
             |> shouldEqual
                 [

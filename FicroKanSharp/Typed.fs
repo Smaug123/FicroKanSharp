@@ -4,33 +4,27 @@ open System
 open Microsoft.FSharp.Reflection
 
 type TypedTerm<'a> =
-    | Term of UntypedTerm
+    | Term of Term
     | Literal of 'a
 
 [<RequireQualifiedAccess>]
 module TypedTerm =
 
     let variable<'a> (t : Variable) : TypedTerm<'a> =
-        TypedTerm.Term (UntypedTerm.make (Term.Variable t : Term<unit>))
+        TypedTerm.Term (Term.Variable t)
 
     let literal<'a> (t : 'a) : TypedTerm<'a> = TypedTerm.Literal t
 
-    let private untypedTerm : Type -> obj -> UntypedTerm =
-        let m =
-            Reflection.invokeStaticMethod <@ UntypedTerm.make @>
-
-        fun tl o -> m [ tl ] [ o ] |> unbox
-
-    let rec private toUntypedLiteral<'a when 'a : equality> (t : 'a) : UntypedTerm =
+    let rec private toUntypedLiteral<'a when 'a : equality> (t : 'a) : Term =
         let ty = typeof<'a>
 
         if ty = typeof<Variable> then
-            UntypedTerm.make<unit> (Term.Variable (unbox t))
+            Term.Variable (unbox t)
         elif FSharpType.IsUnion ty then
             let fieldU, valuesU =
                 FSharpValue.GetUnionFields (t, typeof<'a>)
 
-            let toTermList (o : obj []) : UntypedTerm list =
+            let toTermList (o : obj []) : Term list =
                 o
                 |> List.ofArray
                 |> List.map (fun (o : obj) ->
@@ -48,23 +42,22 @@ module TypedTerm =
             let td = typedefof<'a>
 
             Term.Symbol ((td, fieldU.Name), valuesU)
-            |> UntypedTerm.make
         else
-            UntypedTerm.make (Term.Symbol ((ty, t), []))
+            Term.Symbol ((ty, t), [])
 
-    and private ofLiteral : Type -> obj -> UntypedTerm =
+    and private ofLiteral : Type -> obj -> Term =
         let m =
             Reflection.invokeStaticMethod <@ toUntypedLiteral @>
 
         fun tl o -> m [ tl ] [ o ] |> unbox
 
-    and private compileUntyped : Type -> obj -> UntypedTerm =
+    and private compileUntyped : Type -> obj -> Term =
         let m =
             Reflection.invokeStaticMethod <@ compile @>
 
         fun tl o -> m [ tl ] [ o ] |> unbox
 
-    and compile<'a when 'a : equality> (t : TypedTerm<'a>) : UntypedTerm =
+    and compile<'a when 'a : equality> (t : TypedTerm<'a>) : Term =
         match t with
         | TypedTerm.Term t -> t
         | TypedTerm.Literal u -> toUntypedLiteral u

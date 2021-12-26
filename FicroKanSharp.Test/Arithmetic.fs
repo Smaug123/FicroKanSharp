@@ -8,19 +8,19 @@ module Arithmetic =
 
     [<Fact>]
     let ``Arithmetic example, untyped`` () =
-        let zero : Term<string> = Term.Symbol ("zero", [])
+        let zero : Term = Term.Symbol ("zero", [])
 
-        let succ (x : Term<string>) : Term<string> =
-            Term.Symbol ("succ", [ UntypedTerm.make x ])
+        let succ (x : Term) : Term =
+            Term.Symbol ("succ", [ x ])
 
-        let rec ofInt (n : int) : Term<string> =
+        let rec ofInt (n : int) : Term =
             if n = 0 then
                 zero
             else
                 succ (ofInt (n - 1))
 
         // "pluso x y z" is "x + y == z".
-        let rec pluso (x : Term<string>) (y : Term<string>) (z : Term<string>) : Goal =
+        let rec pluso (x : Term) (y : Term) (z : Term) : Goal =
             let succCase =
                 Goal.callFresh (fun n ->
                     let n = Term.Variable n
@@ -29,17 +29,17 @@ module Arithmetic =
                         let m = Term.Variable m
 
                         Goal.conj
-                            (Goal.equiv' x (succ n))
-                            (Goal.conj (Goal.equiv' z (succ m)) (Goal.delay (fun () -> pluso n y m)))
+                            (Goal.equiv x (succ n))
+                            (Goal.conj (Goal.equiv z (succ m)) (Goal.delay (fun () -> pluso n y m)))
                     )
                 )
 
             let zeroCase =
-                Goal.conj (Goal.equiv' x zero) (Goal.equiv' y z)
+                Goal.conj (Goal.equiv x zero) (Goal.equiv y z)
 
             Goal.disj zeroCase succCase
 
-        Goal.evaluate (Goal.callFresh (fun z -> Goal.equiv' (Term.Variable z) (Term.Variable z)))
+        Goal.evaluate (Goal.callFresh (fun z -> Goal.equiv (Term.Variable z) (Term.Variable z)))
         |> Stream.toList
         |> shouldEqual [ Map.empty ]
 
@@ -49,10 +49,10 @@ module Arithmetic =
         |> shouldEqual (
             Map.ofList
                 [
-                    VariableCount 0, UntypedTerm.make (ofInt 1)
-                    VariableCount 1, UntypedTerm.make (ofInt 3)
-                    VariableCount 2, UntypedTerm.make zero
-                    VariableCount 3, UntypedTerm.make (ofInt 2)
+                    VariableCount 0, ofInt 1
+                    VariableCount 1, ofInt 3
+                    VariableCount 2, zero
+                    VariableCount 3, ofInt 2
                 ]
         )
 
@@ -63,9 +63,9 @@ module Arithmetic =
         |> shouldEqual (
             Map.ofList
                 [
-                    VariableCount 0, UntypedTerm.make (succ (Term.Variable (VariableCount 2)))
-                    VariableCount 1, UntypedTerm.make (ofInt 0)
-                    VariableCount 2, UntypedTerm.make (ofInt 1)
+                    VariableCount 0, succ (Term.Variable (VariableCount 2))
+                    VariableCount 1, ofInt 0
+                    VariableCount 2, ofInt 1
                 ]
         )
 
@@ -76,11 +76,11 @@ module Arithmetic =
         |> shouldEqual (
             Map.ofList
                 [
-                    VariableCount 0, UntypedTerm.make (succ (Term.Variable (VariableCount 2)))
-                    VariableCount 1, UntypedTerm.make (ofInt 1)
-                    VariableCount 2, UntypedTerm.make (succ (Term.Variable (VariableCount 4)))
-                    VariableCount 3, UntypedTerm.make zero
-                    VariableCount 4, UntypedTerm.make (ofInt 2)
+                    VariableCount 0, succ (Term.Variable (VariableCount 2))
+                    VariableCount 1, ofInt 1
+                    VariableCount 2, succ (Term.Variable (VariableCount 4))
+                    VariableCount 3, zero
+                    VariableCount 4, ofInt 2
                 ]
         )
 
@@ -91,11 +91,11 @@ module Arithmetic =
         |> shouldEqual (
             Map.ofList
                 [
-                    VariableCount 0, UntypedTerm.make (succ (Term.Variable (VariableCount 1)))
-                    VariableCount 1, UntypedTerm.make (succ (Term.Variable (VariableCount 3)))
-                    VariableCount 2, UntypedTerm.make (ofInt 3)
-                    VariableCount 3, UntypedTerm.make zero
-                    VariableCount 4, UntypedTerm.make (ofInt 2)
+                    VariableCount 0, succ (Term.Variable (VariableCount 1))
+                    VariableCount 1, succ (Term.Variable (VariableCount 3))
+                    VariableCount 2, ofInt 3
+                    VariableCount 3, zero
+                    VariableCount 4, ofInt 2
                 ]
         )
 
