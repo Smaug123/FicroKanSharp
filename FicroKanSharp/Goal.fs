@@ -7,7 +7,7 @@ open FicroKanSharp
 module Goal =
     let callFresh (f : Variable -> Goal) = Goal.Fresh f
 
-    let delay g = Goal.Delay g
+    let delay (g : unit -> Goal) = Goal.Fresh (fun _ -> g ())
 
     /// Boolean "or": either goal must be satisfied.
     let disj (goal1 : Goal) (goal2 : Goal) : Goal = Goal.Disj (goal1, goal2)
@@ -77,13 +77,14 @@ module Goal =
         | Goal.Fresh goal ->
             let newVar = state.VariableCounter
 
-            evaluate'
-                (goal newVar)
-                { state with
-                    VariableCounter = Variable.incr state.VariableCounter
-                }
+            Stream.Procedure (fun () ->
+                evaluate'
+                    (goal newVar)
+                    { state with
+                        VariableCounter = Variable.incr state.VariableCounter
+                    }
+            )
         | Goal.Disj (goal1, goal2) -> Stream.union (evaluate' goal1 state) (evaluate' goal2 state)
         | Goal.Conj (goal1, goal2) -> Stream.bind (evaluate' goal1 state) (evaluate' goal2)
-        | Goal.Delay g -> Stream.Procedure (fun () -> evaluate' (g ()) state)
 
     let evaluate (goal : Goal) = evaluate' goal State.empty

@@ -110,7 +110,7 @@ module Recursive =
                     VariableCount 0,
                     TypedTerm.literal (Human "bridget")
                     |> TypedTerm.compile
-                    VariableCount 1,
+                    VariableCount 2,
                     TypedTerm.literal (Human "caroline")
                     |> TypedTerm.compile
                 ]

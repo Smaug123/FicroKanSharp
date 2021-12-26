@@ -50,8 +50,8 @@ module Arithmetic =
                 [
                     VariableCount 0, ofInt 1
                     VariableCount 1, ofInt 3
-                    VariableCount 2, zero
-                    VariableCount 3, ofInt 2
+                    VariableCount 3, zero
+                    VariableCount 4, ofInt 2
                 ]
         )
 
@@ -77,9 +77,9 @@ module Arithmetic =
                 [
                     VariableCount 0, succ (Term.Variable (VariableCount 2))
                     VariableCount 1, ofInt 1
-                    VariableCount 2, succ (Term.Variable (VariableCount 4))
-                    VariableCount 3, zero
-                    VariableCount 4, ofInt 2
+                    VariableCount 2, succ (Term.Variable (VariableCount 5))
+                    VariableCount 4, zero
+                    VariableCount 5, ofInt 2
                 ]
         )
 
@@ -91,10 +91,10 @@ module Arithmetic =
             Map.ofList
                 [
                     VariableCount 0, succ (Term.Variable (VariableCount 1))
-                    VariableCount 1, succ (Term.Variable (VariableCount 3))
+                    VariableCount 1, succ (Term.Variable (VariableCount 4))
                     VariableCount 2, ofInt 3
-                    VariableCount 3, zero
-                    VariableCount 4, ofInt 2
+                    VariableCount 4, zero
+                    VariableCount 5, ofInt 2
                 ]
         )
 
@@ -143,9 +143,9 @@ module Arithmetic =
                         TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 1)))
                         |> TypedTerm.compile
                         VariableCount 1,
-                        TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 2)))
+                        TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 3)))
                         |> TypedTerm.compile
-                        VariableCount 2, TypedTerm.literal Nat.Zero |> TypedTerm.compile
+                        VariableCount 3, TypedTerm.literal Nat.Zero |> TypedTerm.compile
                     ]
                 Map.ofList
                     [
@@ -153,12 +153,12 @@ module Arithmetic =
                         TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 1)))
                         |> TypedTerm.compile
                         VariableCount 1,
-                        TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 2)))
-                        |> TypedTerm.compile
-                        VariableCount 2,
                         TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 3)))
                         |> TypedTerm.compile
-                        VariableCount 3, TypedTerm.literal Nat.Zero |> TypedTerm.compile
+                        VariableCount 3,
+                        TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 5)))
+                        |> TypedTerm.compile
+                        VariableCount 5, TypedTerm.literal Nat.Zero |> TypedTerm.compile
                     ]
             ]
 
@@ -194,8 +194,8 @@ module Arithmetic =
                 [
                     VariableCount 0, (ofInt 1 |> TypedTerm.compile)
                     VariableCount 1, (ofInt 3 |> TypedTerm.compile)
-                    VariableCount 2, TypedTerm.compile zero
-                    VariableCount 3, (ofInt 2 |> TypedTerm.compile)
+                    VariableCount 3, TypedTerm.compile zero
+                    VariableCount 4, (ofInt 2 |> TypedTerm.compile)
                 ]
         )
 
@@ -221,9 +221,9 @@ module Arithmetic =
                 [
                     VariableCount 0, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 2)))
                     VariableCount 1, TypedTerm.compile (ofInt 1)
-                    VariableCount 2, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 4)))
-                    VariableCount 3, TypedTerm.compile zero
-                    VariableCount 4, TypedTerm.compile (ofInt 2)
+                    VariableCount 2, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 5)))
+                    VariableCount 4, TypedTerm.compile zero
+                    VariableCount 5, TypedTerm.compile (ofInt 2)
                 ]
         )
 
@@ -235,9 +235,9 @@ module Arithmetic =
             Map.ofList
                 [
                     VariableCount 0, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 1)))
-                    VariableCount 1, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 3)))
+                    VariableCount 1, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 4)))
                     VariableCount 2, TypedTerm.compile (ofInt 3)
-                    VariableCount 3, TypedTerm.compile zero
-                    VariableCount 4, TypedTerm.compile (ofInt 2)
+                    VariableCount 4, TypedTerm.compile zero
+                    VariableCount 5, TypedTerm.compile (ofInt 2)
                 ]
         )

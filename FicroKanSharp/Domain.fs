@@ -30,7 +30,6 @@ type Goal =
     | Disj of Goal * Goal
     | Conj of Goal * Goal
     | Fresh of (Variable -> Goal)
-    | Delay of (unit -> Goal)
 
 type internal State =
     {
