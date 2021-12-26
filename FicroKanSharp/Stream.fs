@@ -19,14 +19,14 @@ module Stream =
         | Stream.Procedure s -> Stream.Procedure (fun () -> bind (s ()) g)
         | Stream.Nonempty (fst, rest) -> union (g fst) (bind rest g)
 
-    let rec peel (s : Stream) : (Map<Variable, TypedTerm> * Stream) option =
+    let rec peel (s : Stream) : (Map<Variable, UntypedTerm> * Stream) option =
         match s with
         | Stream.Empty -> None
         | Stream.Nonempty (fst, rest) -> Some (fst.Substitution, rest)
         | Stream.Procedure p -> peel (p ())
 
     /// This will stack-overflow for an infinite stream.
-    let toList (s : Stream) : Map<Variable, TypedTerm> list =
+    let toList (s : Stream) : Map<Variable, UntypedTerm> list =
         let rec go acc s =
             match s with
             | Stream.Empty -> acc

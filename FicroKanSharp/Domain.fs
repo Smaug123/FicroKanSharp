@@ -8,10 +8,10 @@ type Variable = internal VariableCount of int
 module private Variable =
     let incr (VariableCount v) = VariableCount (v + 1)
 
-type Term<'a> =
+type Term<'key> =
     internal
     | Variable of Variable
-    | Symbol of name : string * args : UntypedTerm list
+    | Symbol of name : 'key * args : UntypedTerm list
 
     override this.ToString () =
         match this with
@@ -106,7 +106,7 @@ module internal TermPairCrate =
 
 type Goal =
     private
-    | Equiv of TermPairCrate
+    | Equiv of UntypedTerm * UntypedTerm
     | Disj of Goal * Goal
     | Conj of Goal * Goal
     | Fresh of (Variable -> Goal)

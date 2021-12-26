@@ -1,8 +1,6 @@
 namespace FicroKanSharp
 
-open System
-open Microsoft.FSharp.Reflection
-open TeqCrate
+open FicroKanSharp
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -17,119 +15,88 @@ module Goal =
     /// Boolean "and": both goals must be satisfied simultaneously.
     let conj (goal1 : Goal) (goal2 : Goal) : Goal = Goal.Conj (goal1, goal2)
 
-    let equiv<'a when 'a : equality> (term1 : 'a Term) (term2 : 'a Term) : Goal =
-        TermPairCrate.make term1 term2 |> Goal.Equiv
+    let equiv (term1 : UntypedTerm) (term2 : UntypedTerm) : Goal =
+        Goal.Equiv (term1, term2)
+
+    let equiv'<'a, 'b when 'a : equality and 'b : equality> (term1 : 'a Term) (term2 : 'b Term) : Goal =
+        equiv (UntypedTerm.make term1) (UntypedTerm.make term2)
 
     let never : Goal =
-        equiv (Term.Symbol ("_internal", [])) (Term.Symbol ("_internal", [ Term.Symbol ("_internal", []) |> UntypedTerm.make ]))
+        equiv (Term.Symbol ("_internal", []) |> UntypedTerm.make) (Term.Symbol ("_internal", [ Term.Symbol ("_internal", []) |> UntypedTerm.make ]) |> UntypedTerm.make)
 
-    let private walk<'a> (u : Term<'a>) (s : State) : Term<'a> =
+    let private walk<'a when 'a : equality> (u : Term<'a>) (s : State) : UntypedTerm =
         match u with
         | Term.Variable u ->
             match Map.tryFind u s.Substitution with
-            | None -> Term.Variable u
-            | Some (UntypedTerm subst) ->
-                { new TermEvaluator<_> with
-                    member _.Eval x = unbox x
-                }
-                |> subst.Apply
-        | u -> u
+            | None -> Term.Variable u |> UntypedTerm.make
+            | Some subst ->
+                subst
+        | u -> u |> UntypedTerm.make
 
     let private extend<'a when 'a : equality> (v : Variable) (t : Term<'a>) (s : State) =
         { s with
             Substitution = Map.add v (TermCrate.make t |> UntypedTerm) s.Substitution
         }
 
-    let private untypedTerm : Type -> obj -> obj =
-        let m = Reflection.invokeStaticMethod <@ UntypedTerm.make @>
-        fun tl o -> m [tl] [o]
-    let private ofLiteral : Type -> obj -> obj =
-        let m = Reflection.invokeStaticMethod <@ Term.ofLiteral @>
-        fun tl o -> m [tl] [o]
-
-    let rec private unify<'a when 'a : equality> (u : 'a Term) (v : 'a Term) (s : State) : State option =
+    let rec private unify<'a, 'b when 'a : equality and 'b : equality> (u : 'a Term) (v : 'b Term) (s : State) : State option =
         printfn $"Unifying terms {u}, {v}"
-        let u = walk u s
-        let v = walk v s
+        let (UntypedTerm u) = walk u s
+        let (UntypedTerm v) = walk v s
 
-        match u, v with
-        | Term.Variable u, Term.Variable v when u = v -> s |> Some
-        | Term.Variable u, v -> extend u v s |> Some
-        | u, Term.Variable v -> extend v u s |> Some
-        | Term.Literal u, Term.Literal v ->
-            if FSharpType.IsUnion typeof<'a> then
-                let fieldU, valuesU = FSharpValue.GetUnionFields (u, typeof<'a>)
-                let toTermList (o : obj []) : TypedTerm list =
-                    o
-                    |> List.ofArray
-                    |> List.map (fun (o : obj) ->
-                        let ty = o.GetType ()
-                        if ty.IsGenericType && ty.BaseType.GetGenericTypeDefinition () = typedefof<Term<obj>>.GetGenericTypeDefinition () then
-                            o
-                            |> typedTerm ty.GenericTypeArguments.[0]
-                            |> unbox<TypedTerm>
-                        else
-                            ofLiteral ty o
-                            |> typedTerm ty
-                            |> unbox<TypedTerm>
-                    )
-                let valuesU = toTermList valuesU
-                let fieldV, valuesV = FSharpValue.GetUnionFields (v, typeof<'a>)
-                let valuesV = toTermList valuesV
-                unify<'a>
-                    (Term.Symbol (fieldU.Name, valuesU))
-                    (Term.Symbol (fieldV.Name, valuesV))
-                    s
-            else
-                if u = v then Some s else None
-        | Term.Symbol (name1, args1), Term.Symbol (name2, args2) ->
-            if (name1 <> name2) || (args1.Length <> args2.Length) then
-                None
-            else
-                let rec go state args1 args2 =
-                    match args1, args2 with
-                    | [], [] -> Some state
-                    | _, []
-                    | [], _ -> None
-                    | TypedTerm arg1 :: args1, TypedTerm arg2 :: args2 ->
-                        { new TermEvaluator<_> with
-                            member _.Eval<'t when 't : equality> (arg1 : Term<'t>) =
-                                { new TermEvaluator<_> with
-                                    member _.Eval<'u when 'u : equality> (arg2 : Term<'u>) =
-                                        let arg2 =
-                                            try
-                                                unbox<Term<'t>> arg2
-                                                |> Some
-                                            with
-                                            | e ->
-                                                reraise()
+        { new TermEvaluator<_> with
+            member _.Eval u =
+                { new TermEvaluator<_> with
+                    member _.Eval v =
+                        match u, v with
+                        | Term.Variable u, Term.Variable v when u = v -> s |> Some
+                        | Term.Variable u, v -> extend u v s |> Some
+                        | u, Term.Variable v -> extend v u s |> Some
+                        | Term.Symbol (name1, args1), Term.Symbol (name2, args2) ->
+                            if name1.GetType () <> name2.GetType () then None else
+                            let name2 = unbox name1
+                            if (name1 <> name2) || (args1.Length <> args2.Length) then
+                                None
+                            else
+                                let rec go state args1 args2 =
+                                    match args1, args2 with
+                                    | [], [] -> Some state
+                                    | _, []
+                                    | [], _ -> None
+                                    | UntypedTerm arg1 :: args1, UntypedTerm arg2 :: args2 ->
+                                        { new TermEvaluator<_> with
+                                            member _.Eval<'t when 't : equality> (arg1 : Term<'t>) =
+                                                { new TermEvaluator<_> with
+                                                    member _.Eval<'u when 'u : equality> (arg2 : Term<'u>) =
+                                                        match unify arg1 arg2 s with
+                                                        | None -> None
+                                                        | Some s -> go s args1 args2
+                                                }
+                                                |> arg2.Apply
+                                        }
+                                        |> arg1.Apply
 
-                                        match arg2 with
-                                        | None -> None
-                                        | Some arg2 ->
+                                go s args1 args2
 
-                                        match unify arg1 arg2 s with
-                                        | None -> None
-                                        | Some s -> go s args1 args2
-                                }
-                                |> arg2.Apply
-                        }
-                        |> arg1.Apply
-
-                go s args1 args2
-
-        | _, _ -> None
+                        | _, _ -> None
+                }
+                |> v.Apply
+        }
+        |> u.Apply
 
     let rec private evaluate' (goal : Goal) (state : State) : Stream =
         match goal with
-        | Goal.Equiv pair ->
-            { new TermPairEvaluator<_> with
-                member _.Eval u v =
-                    match unify u v state with
-                    | None -> Stream.empty
-                    | Some unification -> Stream.Nonempty (unification, Stream.empty)
+        | Goal.Equiv (UntypedTerm t1, UntypedTerm t2) ->
+            { new TermEvaluator<_> with
+                member _.Eval u =
+                    { new TermEvaluator<_> with
+                        member _.Eval v =
+                            match unify u v state with
+                            | None -> Stream.empty
+                            | Some unification -> Stream.Nonempty (unification, Stream.empty)
+                    }
+                    |> t2.Apply
             }
-            |> pair.Apply
+            |> t1.Apply
         | Goal.Fresh goal ->
             let newVar = state.VariableCounter
 

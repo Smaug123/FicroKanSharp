@@ -7,7 +7,7 @@
     <ItemGroup>
         <Compile Include="TestExamples.fs" />
         <Compile Include="Arithmetic.fs" />
-        <Compile Include="NotWorking.fs" />
+        <None Include="NotWorking.fs" />
     </ItemGroup>
 
     <ItemGroup>
