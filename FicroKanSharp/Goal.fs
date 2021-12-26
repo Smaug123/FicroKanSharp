@@ -1,5 +1,9 @@
 namespace FicroKanSharp
 
+open System
+open Microsoft.FSharp.Reflection
+open TeqCrate
+
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Goal =
@@ -16,12 +20,15 @@ module Goal =
     let equiv<'a when 'a : equality> (term1 : 'a Term) (term2 : 'a Term) : Goal =
         TermPairCrate.make term1 term2 |> Goal.Equiv
 
+    let never : Goal =
+        equiv (Term.Symbol ("_internal", [])) (Term.Symbol ("_internal", [ Term.Symbol ("_internal", []) |> UntypedTerm.make ]))
+
     let private walk<'a> (u : Term<'a>) (s : State) : Term<'a> =
         match u with
         | Term.Variable u ->
             match Map.tryFind u s.Substitution with
             | None -> Term.Variable u
-            | Some (TypedTerm subst) ->
+            | Some (UntypedTerm subst) ->
                 { new TermEvaluator<_> with
                     member _.Eval x = unbox x
                 }
@@ -30,10 +37,18 @@ module Goal =
 
     let private extend<'a when 'a : equality> (v : Variable) (t : Term<'a>) (s : State) =
         { s with
-            Substitution = Map.add v (TermCrate.make t |> TypedTerm) s.Substitution
+            Substitution = Map.add v (TermCrate.make t |> UntypedTerm) s.Substitution
         }
 
+    let private untypedTerm : Type -> obj -> obj =
+        let m = Reflection.invokeStaticMethod <@ UntypedTerm.make @>
+        fun tl o -> m [tl] [o]
+    let private ofLiteral : Type -> obj -> obj =
+        let m = Reflection.invokeStaticMethod <@ Term.ofLiteral @>
+        fun tl o -> m [tl] [o]
+
     let rec private unify<'a when 'a : equality> (u : 'a Term) (v : 'a Term) (s : State) : State option =
+        printfn $"Unifying terms {u}, {v}"
         let u = walk u s
         let v = walk v s
 
@@ -41,12 +56,36 @@ module Goal =
         | Term.Variable u, Term.Variable v when u = v -> s |> Some
         | Term.Variable u, v -> extend u v s |> Some
         | u, Term.Variable v -> extend v u s |> Some
-        | Term.Literal u, Term.Literal v -> if u = v then Some s else None
+        | Term.Literal u, Term.Literal v ->
+            if FSharpType.IsUnion typeof<'a> then
+                let fieldU, valuesU = FSharpValue.GetUnionFields (u, typeof<'a>)
+                let toTermList (o : obj []) : TypedTerm list =
+                    o
+                    |> List.ofArray
+                    |> List.map (fun (o : obj) ->
+                        let ty = o.GetType ()
+                        if ty.IsGenericType && ty.BaseType.GetGenericTypeDefinition () = typedefof<Term<obj>>.GetGenericTypeDefinition () then
+                            o
+                            |> typedTerm ty.GenericTypeArguments.[0]
+                            |> unbox<TypedTerm>
+                        else
+                            ofLiteral ty o
+                            |> typedTerm ty
+                            |> unbox<TypedTerm>
+                    )
+                let valuesU = toTermList valuesU
+                let fieldV, valuesV = FSharpValue.GetUnionFields (v, typeof<'a>)
+                let valuesV = toTermList valuesV
+                unify<'a>
+                    (Term.Symbol (fieldU.Name, valuesU))
+                    (Term.Symbol (fieldV.Name, valuesV))
+                    s
+            else
+                if u = v then Some s else None
         | Term.Symbol (name1, args1), Term.Symbol (name2, args2) ->
             if (name1 <> name2) || (args1.Length <> args2.Length) then
                 None
             else
-
                 let rec go state args1 args2 =
                     match args1, args2 with
                     | [], [] -> Some state
@@ -57,12 +96,21 @@ module Goal =
                             member _.Eval<'t when 't : equality> (arg1 : Term<'t>) =
                                 { new TermEvaluator<_> with
                                     member _.Eval<'u when 'u : equality> (arg2 : Term<'u>) =
-                                        if typeof<'t> = typeof<'u> then
-                                            match unify arg1 (arg2 |> unbox) state with
-                                            | None -> None
-                                            | Some s -> go s args1 args2
-                                        else
-                                            None
+                                        let arg2 =
+                                            try
+                                                unbox<Term<'t>> arg2
+                                                |> Some
+                                            with
+                                            | e ->
+                                                reraise()
+
+                                        match arg2 with
+                                        | None -> None
+                                        | Some arg2 ->
+
+                                        match unify arg1 arg2 s with
+                                        | None -> None
+                                        | Some s -> go s args1 args2
                                 }
                                 |> arg2.Apply
                         }
@@ -72,7 +120,7 @@ module Goal =
 
         | _, _ -> None
 
-    let rec evaluate (goal : Goal) (state : State) : Stream =
+    let rec private evaluate' (goal : Goal) (state : State) : Stream =
         match goal with
         | Goal.Equiv pair ->
             { new TermPairEvaluator<_> with
@@ -85,14 +133,16 @@ module Goal =
         | Goal.Fresh goal ->
             let newVar = state.VariableCounter
 
-            evaluate
+            evaluate'
                 (goal newVar)
                 { state with
                     VariableCounter = Variable.incr state.VariableCounter
                 }
-        | Goal.Disj (goal1, goal2) -> Stream.union (evaluate goal1 state) (evaluate goal2 state)
-        | Goal.Conj (goal1, goal2) -> Stream.bind (evaluate goal1 state) (evaluate goal2)
-        | Goal.Delay g -> Stream.Procedure (fun () -> evaluate (g ()) state)
+        | Goal.Disj (goal1, goal2) -> Stream.union (evaluate' goal1 state) (evaluate' goal2 state)
+        | Goal.Conj (goal1, goal2) -> Stream.bind (evaluate' goal1 state) (evaluate' goal2)
+        | Goal.Delay g -> Stream.Procedure (fun () -> evaluate' (g ()) state)
+
+    let evaluate (goal : Goal) = evaluate' goal State.empty
 
 (*
     (dene (mK-reify s/c* )

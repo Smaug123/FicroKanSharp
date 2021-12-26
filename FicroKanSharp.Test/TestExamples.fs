@@ -17,7 +17,7 @@ module TestThing =
                         (Goal.equiv (Term.Variable x) (Term.Literal 6))
                 ))
 
-        let u = Goal.evaluate aAndB State.empty
+        let u = Goal.evaluate aAndB
 
         match u |> Stream.peel with
         | None -> failwith "oh no"
@@ -54,7 +54,7 @@ module TestThing =
         let aAndB =
             (Goal.callFresh (fun x -> Goal.equiv (Term.Variable x) (Term.Literal 5)))
 
-        let u = Goal.evaluate aAndB State.empty
+        let u = Goal.evaluate aAndB
 
         match u |> Stream.peel with
         | None -> failwith "oh no"
@@ -78,7 +78,7 @@ module TestThing =
             (Goal.disj (Goal.equiv (Term.Variable x) (Term.Literal 5)) (Goal.delay (fun () -> fives x)))
 
         let u =
-            Goal.evaluate (Goal.callFresh fives) State.empty
+            Goal.evaluate (Goal.callFresh fives)
 
         match u |> Stream.peel with
         | None -> failwith "oh no"
@@ -127,7 +127,7 @@ module TestThing =
         let fivesAndSixes =
             Goal.callFresh (fun x -> Goal.disj (fives x) (sixes x))
 
-        let u = Goal.evaluate fivesAndSixes State.empty
+        let u = Goal.evaluate fivesAndSixes
 
         match u |> Stream.peel with
         | None -> failwith "oh no"

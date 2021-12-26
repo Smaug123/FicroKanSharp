@@ -1,5 +1,7 @@
 ﻿namespace FicroKanSharp
 
+open Microsoft.FSharp.Core
+
 type Variable = internal VariableCount of int
 
 [<RequireQualifiedAccess>]
@@ -7,9 +9,9 @@ module private Variable =
     let incr (VariableCount v) = VariableCount (v + 1)
 
 type Term<'a> =
-    | Literal of 'a
+    internal
     | Variable of Variable
-    | Symbol of name : string * args : TypedTerm list
+    | Symbol of name : string * args : UntypedTerm list
 
     override this.ToString () =
         match this with
@@ -21,7 +23,6 @@ type Term<'a> =
 
             $"{name}[{s}]"
         | Variable (VariableCount v) -> $"x{v}"
-        | Literal t -> t.ToString ()
 
 and internal TermEvaluator<'ret> =
     abstract Eval<'a when 'a : equality> : 'a Term -> 'ret
@@ -29,23 +30,23 @@ and internal TermEvaluator<'ret> =
 and internal TermCrate =
     abstract Apply<'ret> : TermEvaluator<'ret> -> 'ret
 
-and [<CustomEquality ; NoComparison>] TypedTerm =
+and [<CustomEquality ; NoComparison>] UntypedTerm =
     internal
-    | TypedTerm of TermCrate
+    | UntypedTerm of TermCrate
 
     override this.Equals (other : obj) : bool =
         match this with
-        | TypedTerm tc ->
+        | UntypedTerm tc ->
 
         match other with
-        | :? TypedTerm as other ->
+        | :? UntypedTerm as other ->
             match other with
-            | TypedTerm other -> tc.Equals other
+            | UntypedTerm other -> tc.Equals other
         | _ -> false
 
     override this.GetHashCode () =
         match this with
-        | TypedTerm tc ->
+        | UntypedTerm tc ->
             { new TermEvaluator<_> with
                 override _.Eval t = t.GetHashCode ()
             }
@@ -53,7 +54,7 @@ and [<CustomEquality ; NoComparison>] TypedTerm =
 
     override this.ToString () =
         match this with
-        | TypedTerm tc -> tc.ToString ()
+        | UntypedTerm tc -> tc.ToString ()
 
 [<RequireQualifiedAccess>]
 module internal TermCrate =
@@ -80,14 +81,14 @@ module internal TermCrate =
         }
 
 [<RequireQualifiedAccess>]
-module TypedTerm =
-    let force<'a> (TypedTerm t) : 'a Term =
+module UntypedTerm =
+    let force<'a> (UntypedTerm t) : 'a Term =
         { new TermEvaluator<_> with
             member _.Eval t = unbox t
         }
         |> t.Apply
 
-    let make<'a when 'a : equality> (t : 'a Term) : TypedTerm = TermCrate.make t |> TypedTerm
+    let make<'a when 'a : equality> (t : 'a Term) : UntypedTerm = TermCrate.make t |> UntypedTerm
 
 /// Equality constraint is required because we use this crate for unification
 type internal TermPairEvaluator<'ret> =
@@ -111,12 +112,11 @@ type Goal =
     | Fresh of (Variable -> Goal)
     | Delay of (unit -> Goal)
 
-type State =
-    internal
-        {
-            Substitution : Map<Variable, TypedTerm>
-            VariableCounter : Variable
-        }
+type internal State =
+    {
+        Substitution : Map<Variable, UntypedTerm>
+        VariableCounter : Variable
+    }
 
 type Stream =
     private
@@ -125,7 +125,7 @@ type Stream =
     | Nonempty of State * Stream
 
 [<RequireQualifiedAccess>]
-module State =
+module private State =
     let empty =
         {
             VariableCounter = VariableCount 0

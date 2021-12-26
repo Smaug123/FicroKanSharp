@@ -7,9 +7,15 @@
 
     <ItemGroup>
         <Compile Include="AssemblyInfo.fs" />
+        <Compile Include="Reflection.fs" />
         <Compile Include="Domain.fs" />
         <Compile Include="Stream.fs" />
         <Compile Include="Goal.fs" />
+        <Compile Include="Typed.fs" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="TeqCrate" Version="0.1.5" />
     </ItemGroup>
 
 </Project>
