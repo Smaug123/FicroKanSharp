@@ -18,10 +18,20 @@ module Goal =
     let equiv (term1 : Term) (term2 : Term) : Goal = Goal.Equiv (term1, term2)
 
     let never : Goal =
-        equiv (Term.Symbol ("_internal", [])) (Term.Symbol ("_internal", [ Term.Symbol ("_internal", []) ]))
+        equiv (Term.Symbol ("_never", [])) (Term.Symbol ("_never2", []))
 
     let always : Goal =
-        equiv (Term.Symbol ("_internal", [])) (Term.Symbol ("_internal", []))
+        equiv (Term.Symbol ("_always", [])) (Term.Symbol ("_always", []))
+
+    let all (goals : Goal list) : Goal =
+        match goals with
+        | [] -> always
+        | goal :: goals -> goals |> List.fold conj goal
+
+    let any (goals : Goal list) : Goal =
+        match goals with
+        | [] -> never
+        | goal :: goals -> goals |> List.fold disj goal
 
     let private walk (u : Term) (s : State) : Term =
         match u with
