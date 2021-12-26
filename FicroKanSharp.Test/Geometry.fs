@@ -43,16 +43,10 @@ module Geometry =
         |> TypedTerm.Literal
         |> verticalo
         |> Goal.evaluate
-        |> Stream.toList
-        |> List.exactlyOne
-        |> shouldEqual (
-            Map.ofList
-                [
-                    VariableCount 0, TypedTerm.compile (TypedTerm.Literal 1)
-                    VariableCount 1, TypedTerm.compile (TypedTerm.Literal 1)
-                    VariableCount 2, TypedTerm.compile (TypedTerm.Literal 3)
-                ]
-        )
+        |> Reify.withRespectToFirst
+        |> Seq.exactlyOne
+        |> Option.get
+        |> shouldEqual (TypedTerm.compile (TypedTerm.literal 1))
 
         (Line (
             TypedTerm.Literal (Point (TypedTerm.Literal 1, TypedTerm.Literal 1)),

@@ -123,43 +123,16 @@ module Arithmetic =
         // By the power of microKanren, let some numerals be manifested!
 
         Goal.evaluate (TypedTerm.Goal.callFresh numeralo)
-        |> Stream.take 4
+        |> Reify.withRespectToFirst
+        |> Seq.truncate 4
+        |> Seq.toList
+        |> List.map Option.get
         |> shouldEqual
             [
-                Map.ofList
-                    [
-                        VariableCount 0, TypedTerm.literal Nat.Zero |> TypedTerm.compile
-                    ]
-                Map.ofList
-                    [
-                        VariableCount 0,
-                        TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 1)))
-                        |> TypedTerm.compile
-                        VariableCount 1, TypedTerm.literal Nat.Zero |> TypedTerm.compile
-                    ]
-                Map.ofList
-                    [
-                        VariableCount 0,
-                        TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 1)))
-                        |> TypedTerm.compile
-                        VariableCount 1,
-                        TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 3)))
-                        |> TypedTerm.compile
-                        VariableCount 3, TypedTerm.literal Nat.Zero |> TypedTerm.compile
-                    ]
-                Map.ofList
-                    [
-                        VariableCount 0,
-                        TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 1)))
-                        |> TypedTerm.compile
-                        VariableCount 1,
-                        TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 3)))
-                        |> TypedTerm.compile
-                        VariableCount 3,
-                        TypedTerm.literal (Nat.Succ (TypedTerm.variable (VariableCount 5)))
-                        |> TypedTerm.compile
-                        VariableCount 5, TypedTerm.literal Nat.Zero |> TypedTerm.compile
-                    ]
+                TypedTerm.compile (ofInt 0)
+                TypedTerm.compile (ofInt 1)
+                TypedTerm.compile (ofInt 2)
+                TypedTerm.compile (ofInt 3)
             ]
 
         // "pluso x y z" is "x + y == z".
@@ -201,43 +174,21 @@ module Arithmetic =
 
         // Evaluate 1 + 1
         Goal.evaluate (Goal.callFresh (fun z -> pluso (ofInt 1) (ofInt 1) (TypedTerm.variable z)))
-        |> Stream.toList
-        |> List.exactlyOne
-        |> shouldEqual (
-            Map.ofList
-                [
-                    VariableCount 0, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 2)))
-                    VariableCount 1, TypedTerm.compile (ofInt 0)
-                    VariableCount 2, TypedTerm.compile (ofInt 1)
-                ]
-        )
+        |> Reify.withRespectToFirst
+        |> Seq.exactlyOne
+        |> Option.get
+        |> shouldEqual (TypedTerm.compile (ofInt 2))
 
         // Evaluate 2 + 2
         Goal.evaluate (Goal.callFresh (fun z -> pluso (ofInt 2) (ofInt 2) (TypedTerm.variable z)))
-        |> Stream.toList
-        |> List.exactlyOne
-        |> shouldEqual (
-            Map.ofList
-                [
-                    VariableCount 0, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 2)))
-                    VariableCount 1, TypedTerm.compile (ofInt 1)
-                    VariableCount 2, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 5)))
-                    VariableCount 4, TypedTerm.compile zero
-                    VariableCount 5, TypedTerm.compile (ofInt 2)
-                ]
-        )
+        |> Reify.withRespectToFirst
+        |> Seq.exactlyOne
+        |> Option.get
+        |> shouldEqual (TypedTerm.compile (ofInt 4))
 
-        // Find n such that n + n = 4
+        // Find all n such that n + n = 4
         Goal.evaluate (Goal.callFresh (fun z -> pluso (TypedTerm.variable z) (TypedTerm.variable z) (ofInt 4)))
-        |> Stream.toList
-        |> List.exactlyOne
-        |> shouldEqual (
-            Map.ofList
-                [
-                    VariableCount 0, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 1)))
-                    VariableCount 1, TypedTerm.compile (succ (TypedTerm.variable (VariableCount 4)))
-                    VariableCount 2, TypedTerm.compile (ofInt 3)
-                    VariableCount 4, TypedTerm.compile zero
-                    VariableCount 5, TypedTerm.compile (ofInt 2)
-                ]
-        )
+        |> Reify.withRespectToFirst
+        |> Seq.exactlyOne
+        |> Option.get
+        |> shouldEqual (TypedTerm.compile (ofInt 2))

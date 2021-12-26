@@ -12,6 +12,7 @@
         <Compile Include="Stream.fs" />
         <Compile Include="Goal.fs" />
         <Compile Include="Typed.fs" />
+        <Compile Include="Reify.fs" />
     </ItemGroup>
     
     <ItemGroup>
