@@ -77,13 +77,21 @@ module TestCustomUnification =
             | Pure n, Zero
             | Zero, Pure n -> if n = 0 then Some state else None
             | Succ, Pure n ->
-                if n = 0 then None else unify (List.exactlyOne args1) (Term.Symbol (Pure (n - 1), [])) state
+                if n = 0 then
+                    None
+                else
+                    unify (List.exactlyOne args1) (Term.Symbol (Pure (n - 1), [])) state
             | Pure n, Succ ->
-                if n = 0 then None else unify (Term.Symbol (Pure (n - 1), [])) (List.exactlyOne args2) state
+                if n = 0 then
+                    None
+                else
+                    unify (Term.Symbol (Pure (n - 1), [])) (List.exactlyOne args2) state
 
     let rec toTerm (n : int) : Term =
-        if n = 0 then Term.Symbol (Peano.Zero, []) else
-        Term.Symbol (Peano.Succ, [toTerm (n - 1)])
+        if n = 0 then
+            Term.Symbol (Peano.Zero, [])
+        else
+            Term.Symbol (Peano.Succ, [ toTerm (n - 1) ])
 
     [<Fact>]
     let ``A custom augmented Peano naturals type`` () =
@@ -106,7 +114,9 @@ module TestCustomUnification =
         |> Reify.withRespectToFirst
         |> shouldBeEmpty
 
-        Goal.callFresh (fun x -> Goal.equiv (Term.Symbol (Peano.Succ, [Term.Variable x])) (Term.Symbol (Peano.Pure 5, [])))
+        Goal.callFresh (fun x ->
+            Goal.equiv (Term.Symbol (Peano.Succ, [ Term.Variable x ])) (Term.Symbol (Peano.Pure 5, []))
+        )
         |> Goal.evaluate
         |> Reify.withRespectToFirst
         |> Seq.exactlyOne

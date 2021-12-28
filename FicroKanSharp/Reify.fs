@@ -28,8 +28,7 @@ module Reify =
             | Some (first, other) ->
                 match Map.toSeq first |> Seq.tryHead with
                 | None -> yield None
-                | Some (variable, _) ->
-                    yield Some (reify first (Term.Variable variable))
+                | Some (variable, _) -> yield Some (reify first (Term.Variable variable))
 
                 yield! withRespectToFirst other
         }

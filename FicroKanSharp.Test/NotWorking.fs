@@ -10,16 +10,27 @@ module NotWorking =
         | Pure of int
         | Succ of TypedTerm<Int>
 
-        static member Unify (unify : TypedTerm<Int> -> TypedTerm<Int> -> bool option) (t1 : Int) (t2 : Int) : bool option =
+        static member Unify
+            (unify : TypedTerm<Int> -> TypedTerm<Int> -> bool option)
+            (t1 : Int)
+            (t2 : Int)
+            : bool option
+            =
             match t1, t2 with
             | Pure _, Pure _
             | Succ _, Succ _ ->
                 // Ordinary structural unification will handle this
                 None
             | Succ t1, Pure t2 ->
-                if t2 = 0 then Some false else unify t1 (Pure (t2 - 1) |> TypedTerm.literal)
+                if t2 = 0 then
+                    Some false
+                else
+                    unify t1 (Pure (t2 - 1) |> TypedTerm.literal)
             | Pure t1, Succ t2 ->
-                if t1 = 0 then Some false else unify (Pure (t1 - 1) |> TypedTerm.literal) t2
+                if t1 = 0 then
+                    Some false
+                else
+                    unify (Pure (t1 - 1) |> TypedTerm.literal) t2
 
     [<Fact>]
     let ``Arithmetic example using literals`` () =
