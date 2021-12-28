@@ -38,11 +38,13 @@ type Goal =
         | Disj (g1, g2) -> sprintf "((%O) OR  (%O))" g1 g2
         | Equiv (g1, g2) -> sprintf "(%O) == (%O)" g1 g2
 
-type internal State =
-    {
-        Substitution : Map<Variable, Term>
-        VariableCounter : Variable
-    }
+/// This type is public so that the user can define their own Unify methods.
+type State =
+    internal
+        {
+            Substitution : Map<Variable, Term>
+            VariableCounter : Variable
+        }
 
 type Stream =
     private

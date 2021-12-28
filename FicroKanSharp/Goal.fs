@@ -66,15 +66,39 @@ module Goal =
         | Term.Variable u, v -> extend u v s |> Some
         | u, Term.Variable v -> extend v u s |> Some
         | Term.Symbol (name1, args1), Term.Symbol (name2, args2) ->
-            if name1.GetType () <> name2.GetType () then
+            if name1.GetType().ReflectedType <> name2.GetType().ReflectedType then
                 None
             else
+                let ty = name1.GetType().ReflectedType
                 let name2 = unbox name2
 
-                if (name1 <> name2) || (args1.Length <> args2.Length) then
-                    None
+                let customUnification () =
+                    // Custom unification rules
+                    let unifyMethod =
+                        ty.GetMethod("Unify", System.Reflection.BindingFlags.Public ||| System.Reflection.BindingFlags.Static)
+
+                    if obj.ReferenceEquals (unifyMethod, null) then
+                        // Custom unification fails because the user didn't provide any unification rules
+                        None
+                    else
+            //(unify : Term -> Term -> bool option)
+                        if unifyMethod.ReturnParameter.ParameterType <> typeof<State option> then
+                            failwith $"Incorrect unify return parameter should have been Option<State>: {unifyMethod.ReturnParameter.ParameterType}"
+                        match unifyMethod.GetParameters () with
+                        | [| unifyParam ; name1Param ; args1Param ; name2Param ; args2Param ; stateParam |] ->
+                            let result = unifyMethod.Invoke (name1, [| unify; name1; args1; name2; args2; s|]) |> unbox<State option>
+                            result
+                        | parameters ->
+                            failwith $"Incorrect unify parameters: {parameters |> Array.toList}"
+
+                if name1 = name2 && args1.Length = args2.Length then
+                    // Structural unification succeeds
+                    match unifyList args1 args2 s with
+                    | Some s -> Some s
+                    | None ->
+                        customUnification ()
                 else
-                    unifyList args1 args2 s
+                    customUnification ()
 
         | _, _ -> None
 
