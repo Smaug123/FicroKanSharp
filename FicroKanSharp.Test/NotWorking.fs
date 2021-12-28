@@ -11,10 +11,10 @@ module NotWorking =
         | Succ of TypedTerm<Int>
 
         static member Unify
-            (unify : TypedTerm<Int> -> TypedTerm<Int> -> bool option)
+            (unify : Term -> Term -> State option)
             (t1 : Int)
             (t2 : Int)
-            : bool option
+            : State option
             =
             match t1, t2 with
             | Pure _, Pure _

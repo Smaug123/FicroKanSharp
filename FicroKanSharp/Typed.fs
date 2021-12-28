@@ -16,6 +16,17 @@ type internal TypeName<'a> =
     override this.ToString () =
         sprintf "%O<%s>" this.FieldValue this.UserType.Name
 
+    static member Unify
+        (_unify : Term -> Term -> State -> State option)
+        (_t1 : TypeName<'a>)
+        (_args1 : Term list)
+        (_t2 : TypeName<'a>)
+        (_args2 : Term list)
+        (state : State)
+        : State option
+        =
+        failwith "implement"
+
 [<RequireQualifiedAccess>]
 module TypedTerm =
 

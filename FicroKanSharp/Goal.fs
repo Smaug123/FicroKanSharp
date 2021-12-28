@@ -1,6 +1,7 @@
 namespace FicroKanSharp
 
 open FicroKanSharp
+open FSharp.Reflection
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -57,6 +58,74 @@ module Goal =
         | None -> None
         | Some state -> unifyList args1 args2 state
 
+    and private customUnification<'a>
+        (ty : System.Type)
+        (name1 : 'a)
+        (args1 : Term list)
+        (name2 : 'a)
+        (args2 : Term list)
+        (state : State)
+        =
+        // Custom unification rules
+        let unifyMethod =
+            ty.GetMethod (
+                "Unify",
+                System.Reflection.BindingFlags.Public
+                ||| System.Reflection.BindingFlags.Static
+            )
+
+        if obj.ReferenceEquals (unifyMethod, null) then
+            // Custom unification fails because the user didn't provide any unification rules
+            None
+        else
+        //(unify : Term -> Term -> bool option)
+        if unifyMethod.ReturnParameter.ParameterType
+           <> typeof<State option> then
+            failwith
+                $"Incorrect unify return parameter should have been Option<State>: {unifyMethod.ReturnParameter.ParameterType}"
+
+        match unifyMethod.GetParameters () with
+        | [| unifyParam ; name1Param ; args1Param ; name2Param ; args2Param ; stateParam |] ->
+            let wrongParams =
+                [
+                    let t = typeof<Term -> Term -> State -> State option>
+                    if unifyParam.ParameterType <> t then
+                        yield nameof(unifyParam), t
+                    let t = typeof<Term list>
+                    if args1Param.ParameterType <> t then
+                        yield nameof(args1Param), t
+                    if args2Param.ParameterType <> t then
+                        yield nameof(args2Param), t
+                    let t = typeof<State>
+                    if stateParam.ParameterType <> t then
+                        yield nameof(stateParam), t
+                ]
+            match wrongParams with
+            | [] -> ()
+            | wrongParams ->
+                let wrongParams =
+                    wrongParams
+                    |> List.map (fun (s, ty) -> $"{s} (expected: {ty.Name})")
+                    |> String.concat "; "
+                failwith $"Wrong parameters on Unify method of type {ty.Name}: {wrongParams}"
+            let result =
+                unifyMethod.Invoke (
+                    name1,
+                    [|
+                        unify
+                        name1
+                        args1
+                        name2
+                        args2
+                        state
+                    |]
+                )
+                |> unbox<State option>
+
+            result
+        | parameters -> failwith $"Incorrect unify parameters: {parameters |> Array.toList}"
+
+
     and private unify (u : Term) (v : Term) (s : State) : State option =
         let u = walk u s
         let v = walk v s
@@ -66,58 +135,29 @@ module Goal =
         | Term.Variable u, v -> extend u v s |> Some
         | u, Term.Variable v -> extend v u s |> Some
         | Term.Symbol (name1, args1), Term.Symbol (name2, args2) ->
-            if name1.GetType().ReflectedType
-               <> name2.GetType().ReflectedType then
+            let ty =
+                name1.GetType()
+                |> fun ty ->
+                    if FSharpType.IsUnion ty then
+                        if FSharpType.GetUnionCases ty |> Array.forall (fun i -> i.GetFields().Length = 0) then
+                            // reference enum
+                            ty
+                        else
+                            ty.DeclaringType
+                    else ty
+            if not <| name2.GetType().IsAssignableTo ty then
                 None
             else
-                let ty = name1.GetType().ReflectedType
                 let name2 = unbox name2
 
-                let customUnification () =
-                    // Custom unification rules
-                    let unifyMethod =
-                        ty.GetMethod (
-                            "Unify",
-                            System.Reflection.BindingFlags.Public
-                            ||| System.Reflection.BindingFlags.Static
-                        )
-
-                    if obj.ReferenceEquals (unifyMethod, null) then
-                        // Custom unification fails because the user didn't provide any unification rules
-                        None
-                    else
-                    //(unify : Term -> Term -> bool option)
-                    if unifyMethod.ReturnParameter.ParameterType
-                       <> typeof<State option> then
-                        failwith
-                            $"Incorrect unify return parameter should have been Option<State>: {unifyMethod.ReturnParameter.ParameterType}"
-
-                    match unifyMethod.GetParameters () with
-                    | [| unifyParam ; name1Param ; args1Param ; name2Param ; args2Param ; stateParam |] ->
-                        let result =
-                            unifyMethod.Invoke (
-                                name1,
-                                [|
-                                    unify
-                                    name1
-                                    args1
-                                    name2
-                                    args2
-                                    s
-                                |]
-                            )
-                            |> unbox<State option>
-
-                        result
-                    | parameters -> failwith $"Incorrect unify parameters: {parameters |> Array.toList}"
-
                 if name1 = name2 && args1.Length = args2.Length then
-                    // Structural unification succeeds
                     match unifyList args1 args2 s with
-                    | Some s -> Some s
-                    | None -> customUnification ()
+                    | Some s ->
+                        // Structural unification succeeds
+                        Some s
+                    | None -> customUnification ty name1 args1 name2 args2 s
                 else
-                    customUnification ()
+                    customUnification ty name1 args1 name2 args2 s
 
         | _, _ -> None
 

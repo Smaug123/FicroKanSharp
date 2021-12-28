@@ -17,14 +17,15 @@ module TestCustomUnification =
         | Case2
 
         static member Unify
-            (unify : Term -> Term -> bool option)
-            (t1 : IntWithUnification)
-            (args1 : Term list)
-            (t2 : IntWithUnification)
-            (args2 : Term list)
-            : bool option
+            (_unify : Term -> Term -> State -> State option)
+            (_t1 : IntWithUnification)
+            (_args1 : Term list)
+            (_t2 : IntWithUnification)
+            (_args2 : Term list)
+            (state : State)
+            : State option
             =
-            Some true
+            Some state
 
     [<Fact>]
     let ``Type with custom unification`` () =
@@ -47,8 +48,8 @@ module TestCustomUnification =
         |> Goal.evaluate
         |> Reify.withRespectToFirst
         |> Seq.exactlyOne
-        |> Option.get
-        |> shouldEqual (Term.Symbol (IntWithUnification.Case1, []))
+        // Successful result, no variables to reify
+        |> shouldEqual None
 
     type Peano =
         | Pure of int
@@ -68,11 +69,11 @@ module TestCustomUnification =
             | Zero, Zero
             | Succ, Succ
             | Pure _, Pure _ ->
-                // Structural unification will do this
+                // Structural unification will do this in all valid cases.
                 None
             | Succ, Zero
             | Zero, Succ ->
-                // These never unify
+                // These never unify.
                 None
             | Pure n, Zero
             | Zero, Pure n -> if n = 0 then Some state else None
