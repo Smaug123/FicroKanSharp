@@ -88,18 +88,26 @@ module Goal =
         | [| unifyParam ; name1Param ; args1Param ; name2Param ; args2Param ; stateParam |] ->
             let wrongParams =
                 [
-                    let t = typeof<Term -> Term -> State -> State option>
+                    let t =
+                        typeof<Term -> Term -> State -> State option>
+
                     if unifyParam.ParameterType <> t then
-                        yield nameof(unifyParam), t
+                        yield nameof (unifyParam), t
+
                     let t = typeof<Term list>
+
                     if args1Param.ParameterType <> t then
-                        yield nameof(args1Param), t
+                        yield nameof (args1Param), t
+
                     if args2Param.ParameterType <> t then
-                        yield nameof(args2Param), t
+                        yield nameof (args2Param), t
+
                     let t = typeof<State>
+
                     if stateParam.ParameterType <> t then
-                        yield nameof(stateParam), t
+                        yield nameof (stateParam), t
                 ]
+
             match wrongParams with
             | [] -> ()
             | wrongParams ->
@@ -107,7 +115,9 @@ module Goal =
                     wrongParams
                     |> List.map (fun (s, ty) -> $"{s} (expected: {ty.Name})")
                     |> String.concat "; "
+
                 failwith $"Wrong parameters on Unify method of type {ty.Name}: {wrongParams}"
+
             let result =
                 unifyMethod.Invoke (
                     name1,
@@ -136,15 +146,18 @@ module Goal =
         | u, Term.Variable v -> extend v u s |> Some
         | Term.Symbol (name1, args1), Term.Symbol (name2, args2) ->
             let ty =
-                name1.GetType()
+                name1.GetType ()
                 |> fun ty ->
                     if FSharpType.IsUnion ty then
-                        if FSharpType.GetUnionCases ty |> Array.forall (fun i -> i.GetFields().Length = 0) then
+                        if FSharpType.GetUnionCases ty
+                           |> Array.forall (fun i -> i.GetFields().Length = 0) then
                             // reference enum
                             ty
                         else
                             ty.DeclaringType
-                    else ty
+                    else
+                        ty
+
             if not <| name2.GetType().IsAssignableTo ty then
                 None
             else

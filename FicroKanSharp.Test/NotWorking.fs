@@ -10,12 +10,7 @@ module NotWorking =
         | Pure of int
         | Succ of TypedTerm<Int>
 
-        static member Unify
-            (unify : Term -> Term -> State option)
-            (t1 : Int)
-            (t2 : Int)
-            : State option
-            =
+        static member Unify (unify : Term -> Term -> State option) (t1 : Int) (t2 : Int) : State option =
             match t1, t2 with
             | Pure _, Pure _
             | Succ _, Succ _ ->
