@@ -23,14 +23,19 @@ module TypedTerm =
 
     let literal<'a> (t : 'a) : TypedTerm<'a> = TypedTerm.Literal t
 
-    let rec private toUntypedLiteral<'a when 'a : equality> (t : 'a) : Term =
-        let ty = typeof<'a>
+    let resolveGeneric (t : Type) : Type =
+        if t.IsGenericType then
+            t.GetGenericTypeDefinition ()
+        else
+            t
+
+    let rec private toUntypedLiteral (t : obj) : Term =
+        let ty = t.GetType ()
 
         if ty = typeof<Variable> then
             Term.Variable (unbox t)
         elif FSharpType.IsUnion ty then
-            let fieldU, valuesU =
-                FSharpValue.GetUnionFields (t, typeof<'a>)
+            let fieldU, valuesU = FSharpValue.GetUnionFields (t, ty)
 
             let toTermList (o : obj []) : Term list =
                 o
@@ -43,27 +48,26 @@ module TypedTerm =
                            () then
                         o |> compileUntyped ty.GenericTypeArguments.[0]
                     else
-                        ofLiteral ty o
+                        toUntypedLiteral o
                 )
 
             let valuesU = toTermList valuesU
-            let td = typedefof<'a>
 
             Term.Symbol (
                 {
-                    UserType = td
+                    UserType = resolveGeneric ty
                     FieldValue = fieldU.Name
                 },
                 valuesU
             )
         else
-            Term.Symbol ({ UserType = ty ; FieldValue = t }, [])
-
-    and private ofLiteral : Type -> obj -> Term =
-        let m =
-            Reflection.invokeStaticMethod <@ toUntypedLiteral @>
-
-        fun tl o -> m [ tl ] [ o ] |> unbox
+            Term.Symbol (
+                {
+                    UserType = resolveGeneric ty
+                    FieldValue = t
+                },
+                []
+            )
 
     and private compileUntyped : Type -> obj -> Term =
         let m =
