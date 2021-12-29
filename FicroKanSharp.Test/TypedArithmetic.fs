@@ -66,18 +66,14 @@ module TypedArithmetic =
 
             Goal.disj zeroCase succCase
 
-        Goal.callFresh (fun n ->
-            let n = TypedTerm.variable n // should be 1
+        TypedTerm.Goal.callFresh (fun n -> // should be 1
 
-            Goal.callFresh (fun m ->
-                let m = TypedTerm.variable m // should be 3
+            TypedTerm.Goal.callFresh (fun m -> // should be 3
 
                 let delayed =
-                    Goal.callFresh (fun a ->
-                        let a = TypedTerm.variable a // should be 0
+                    TypedTerm.Goal.callFresh (fun a -> // should be 0
 
-                        Goal.callFresh (fun b ->
-                            let b = TypedTerm.variable b // should be 2
+                        TypedTerm.Goal.callFresh (fun b -> // should be 2
 
                             Goal.conj
                                 (TypedTerm.Goal.equiv n (succ a))
@@ -107,7 +103,7 @@ module TypedArithmetic =
 
         // Evaluate 1 + 1
         let onePlusOne =
-            Goal.evaluate (Goal.callFresh (fun z -> pluso (ofInt 1) (ofInt 1) (TypedTerm.variable z)))
+            Goal.evaluate (TypedTerm.Goal.callFresh (fun z -> pluso (ofInt 1) (ofInt 1) z))
             |> Reify.withRespectToFirst
             |> Seq.exactlyOne
             |> Option.get
@@ -119,7 +115,7 @@ module TypedArithmetic =
 
         // Evaluate 2 + 2
         let twoPlusTwo =
-            Goal.evaluate (Goal.callFresh (fun z -> pluso (ofInt 2) (ofInt 2) (TypedTerm.variable z)))
+            Goal.evaluate (TypedTerm.Goal.callFresh (fun z -> pluso (ofInt 2) (ofInt 2) z))
             |> Reify.withRespectToFirst
             |> Seq.exactlyOne
             |> Option.get
@@ -131,7 +127,7 @@ module TypedArithmetic =
 
         // Find n such that n + n = 4
         let halfFour =
-            Goal.evaluate (Goal.callFresh (fun z -> pluso (TypedTerm.variable z) (TypedTerm.variable z) (ofInt 4)))
+            Goal.evaluate (TypedTerm.Goal.callFresh (fun z -> pluso z z (ofInt 4)))
             |> Reify.withRespectToFirst
             |> Seq.exactlyOne
             |> Option.get
