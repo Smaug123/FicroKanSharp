@@ -70,8 +70,10 @@ module Goal =
         let unifyMethod =
             ty.GetMethod (
                 "Unify",
-                System.Reflection.BindingFlags.Public
-                ||| System.Reflection.BindingFlags.Static
+                System.Reflection.BindingFlags.Static
+                ||| System.Reflection.BindingFlags.Public
+                ||| System.Reflection.BindingFlags.FlattenHierarchy
+                ||| System.Reflection.BindingFlags.NonPublic
             )
 
         if obj.ReferenceEquals (unifyMethod, null) then
