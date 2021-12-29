@@ -127,16 +127,9 @@ type internal TypeName<'a when 'a : equality> =
                             |> Array.find (fun uci -> uci.Name = "Term")
 
                         FSharpValue.MakeUnion (typedTermUci, [| unbox var |])
-                //Reflection.invokeStaticMethod <@ unbox @> [| t |] [| var |]
                 )
                 |> Array.ofList
-                |> fun i ->
-                    i
-                    |> Array.map (sprintf "%O")
-                    |> String.concat ","
-                    |> printfn "Making union case %O with arg %s" case.Name
-
-                    FSharpValue.MakeUnion (case, i)
+                |> fun i -> FSharpValue.MakeUnion (case, i)
             else
                 t1.FieldValue
 

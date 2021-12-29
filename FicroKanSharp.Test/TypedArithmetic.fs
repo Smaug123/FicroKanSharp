@@ -68,12 +68,16 @@ module TypedArithmetic =
 
         TypedTerm.Goal.callFresh (fun n -> // should be 1
 
+
             TypedTerm.Goal.callFresh (fun m -> // should be 3
+
 
                 let delayed =
                     TypedTerm.Goal.callFresh (fun a -> // should be 0
 
+
                         TypedTerm.Goal.callFresh (fun b -> // should be 2
+
 
                             Goal.conj
                                 (TypedTerm.Goal.equiv n (succ a))
