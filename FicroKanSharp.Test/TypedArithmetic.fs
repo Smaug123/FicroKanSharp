@@ -4,7 +4,7 @@ open FicroKanSharp
 open Xunit
 open FsUnitTyped
 
-module NotWorking =
+module TypedArithmetic =
 
     type Int =
         | Pure of int

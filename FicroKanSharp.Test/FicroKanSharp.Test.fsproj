@@ -7,7 +7,7 @@
     <ItemGroup>
         <Compile Include="TestExamples.fs" />
         <Compile Include="Arithmetic.fs" />
-        <Compile Include="NotWorking.fs" />
+        <Compile Include="TypedArithmetic.fs" />
         <Compile Include="Geometry.fs" />
         <Compile Include="Recursive.fs" />
         <Compile Include="TestCustomUnification.fs" />
