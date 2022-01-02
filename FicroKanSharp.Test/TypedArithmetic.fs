@@ -83,22 +83,10 @@ module TypedArithmetic =
     //[<Fact>]
     let ``Arithmetic example using literals`` () =
         TypedTerm.Goal.callFresh (fun n -> // should be 1
-
-
-
             TypedTerm.Goal.callFresh (fun m -> // should be 3
-
-
-
                 let delayed =
                     TypedTerm.Goal.callFresh (fun a -> // should be 0
-
-
-
                         TypedTerm.Goal.callFresh (fun b -> // should be 2
-
-
-
                             Goal.conj
                                 (TypedTerm.Goal.equiv n (succ a))
                                 (Goal.conj
@@ -176,11 +164,8 @@ module TypedArithmetic =
         // Find n such that n^2 + 2n + 1 = 4
         let one =
             TypedTerm.Goal.callFresh (fun n -> // n
-
                 TypedTerm.Goal.callFresh (fun nsquared -> // n^2
-
                     TypedTerm.Goal.callFresh (fun twon -> // 2n
-
                         [
                             pluso (Succ twon |> TypedTerm.literal) nsquared (Nat.Pure 4 |> TypedTerm.literal) // (2n+1) + n^2 = 4
                             pluso n n twon // n+n=2n
@@ -202,11 +187,8 @@ module TypedArithmetic =
         // Find n such that n^2 + 2n + 1 = 49
         let six =
             TypedTerm.Goal.callFresh (fun n -> // n
-
                 TypedTerm.Goal.callFresh (fun nsquared -> // n^2
-
                     TypedTerm.Goal.callFresh (fun twon -> // 2n
-
                         [
                             pluso (Succ twon |> TypedTerm.literal) nsquared (Nat.Pure 49 |> TypedTerm.literal) // (2n+1) + n^2 = 4
                             pluso n n twon // n+n=2n
