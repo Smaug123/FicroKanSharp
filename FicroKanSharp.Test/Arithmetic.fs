@@ -33,8 +33,7 @@ module Arithmetic =
                     )
                 )
 
-            let zeroCase =
-                Goal.conj (Goal.equiv x zero) (Goal.equiv y z)
+            let zeroCase = Goal.conj (Goal.equiv x zero) (Goal.equiv y z)
 
             Goal.disj zeroCase succCase
 

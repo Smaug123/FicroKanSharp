@@ -71,8 +71,7 @@ type internal TypeName<'a when 'a : equality> =
                                 )
                                 .MakeGenericMethod typeof<obj>
 
-                        let unboxed =
-                            mi.Invoke (name, [||]) |> unbox<TypeName<obj>>
+                        let unboxed = mi.Invoke (name, [||]) |> unbox<TypeName<obj>>
 
                         let result = unboxed.Decompile args
 
@@ -120,8 +119,7 @@ type internal TypeName<'a when 'a : equality> =
         | [| unifyParam ; _t1Param ; _t2Param ; stateParam |] ->
             let wrongParams =
                 [
-                    let t =
-                        typeof<Term -> Term -> State -> State option>
+                    let t = typeof<Term -> Term -> State -> State option>
 
                     if unifyParam.ParameterType <> t then
                         yield nameof unifyParam, t
@@ -256,17 +254,18 @@ module TypedTerm =
                     values
                 )
         else
-            let resolved = resolveGeneric ty
 
-            fun t ->
-                Term.Symbol (
-                    {
-                        UserType = resolved
-                        FieldValue = t
-                        UnionCases = None
-                    },
-                    []
-                )
+        let resolved = resolveGeneric ty
+
+        fun t ->
+            Term.Symbol (
+                {
+                    UserType = resolved
+                    FieldValue = t
+                    UnionCases = None
+                },
+                []
+            )
 
     and private cache = Dictionary<Type, obj -> Term> ()
 
@@ -281,8 +280,7 @@ module TypedTerm =
         | true, f -> f o
 
     and private compileUntyped : Type -> obj -> Term =
-        let m =
-            Reflection.invokeStaticMethod <@ compile @>
+        let m = Reflection.invokeStaticMethod <@ compile @>
 
         fun tl o -> m [ tl ] [ o ] |> unbox
 

@@ -22,8 +22,7 @@ module Goal =
 
     let equiv (term1 : Term) (term2 : Term) : Goal = Goal.Equiv (term1, term2)
 
-    let never : Goal =
-        equiv (Term.Symbol ("_never", [])) (Term.Symbol ("_never2", []))
+    let never : Goal = equiv (Term.Symbol ("_never", [])) (Term.Symbol ("_never2", []))
 
     let always : Goal =
         equiv (Term.Symbol ("_always", [])) (Term.Symbol ("_always", []))
@@ -96,8 +95,7 @@ module Goal =
         | [| unifyParam ; _name1Param ; args1Param ; _name2Param ; args2Param ; stateParam |] ->
             let wrongParams =
                 [
-                    let t =
-                        typeof<Term -> Term -> State -> State option>
+                    let t = typeof<Term -> Term -> State -> State option>
 
                     if unifyParam.ParameterType <> t then
                         yield nameof unifyParam, t

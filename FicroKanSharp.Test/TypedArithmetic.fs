@@ -60,8 +60,7 @@ module TypedArithmetic =
                 )
             )
 
-        let zeroCase =
-            Goal.conj (TypedTerm.Goal.equiv x zero) (TypedTerm.Goal.equiv y z)
+        let zeroCase = Goal.conj (TypedTerm.Goal.equiv x zero) (TypedTerm.Goal.equiv y z)
 
         Goal.disj zeroCase succCase
 
@@ -75,8 +74,7 @@ module TypedArithmetic =
                     ))
             )
 
-        let zeroCase =
-            Goal.conj (TypedTerm.Goal.equiv x zero) (TypedTerm.Goal.equiv z zero)
+        let zeroCase = Goal.conj (TypedTerm.Goal.equiv x zero) (TypedTerm.Goal.equiv z zero)
 
         Goal.disj zeroCase succCase
 

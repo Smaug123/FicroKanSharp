@@ -100,8 +100,7 @@ module TestThing =
         let rec sixes (x : Variable) =
             (Goal.disj (Goal.equiv (Term.Variable x) (Term.Symbol (6, []))) (Goal.delay (fun () -> sixes x)))
 
-        let fivesAndSixes =
-            Goal.callFresh (fun x -> Goal.disj (fives x) (sixes x))
+        let fivesAndSixes = Goal.callFresh (fun x -> Goal.disj (fives x) (sixes x))
 
         let u = Goal.evaluate fivesAndSixes
 
