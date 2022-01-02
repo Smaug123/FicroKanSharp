@@ -11,7 +11,7 @@ module Stream =
         match s1 with
         | Stream.Empty -> s2
         | Stream.Procedure s -> Stream.Procedure (fun () -> union s2 (s ()))
-        | Stream.Nonempty (fst, rest) -> Stream.Nonempty (fst, union rest s2)
+        | Stream.Nonempty (fst, rest) -> Stream.Nonempty (fst, union s2 rest)
 
     let rec internal bind (s : Stream) (g : State -> Stream) : Stream =
         match s with

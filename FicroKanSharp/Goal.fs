@@ -8,7 +8,11 @@ open FSharp.Reflection
 module Goal =
     let callFresh (f : Variable -> Goal) = Goal.Fresh f
 
-    let delay (g : unit -> Goal) = Goal.Fresh (fun _ -> g ())
+    let delay (g : unit -> Goal) =
+        // This could be expressed as `Goal.Fresh (fun _ -> g ())`,
+        // but I prefer slightly bloating the core rather than bloating all
+        // the unification output.
+        Goal.Delay g
 
     /// Boolean "or": either goal must be satisfied.
     let disj (goal1 : Goal) (goal2 : Goal) : Goal = Goal.Disj (goal1, goal2)
@@ -34,12 +38,14 @@ module Goal =
         | [] -> never
         | goal :: goals -> goals |> List.fold disj goal
 
-    let private walk (u : Term) (s : State) : Term =
+    // TODO(perf): return a new state where we've propagated
+    // the unification
+    let rec private walk (u : Term) (s : State) : Term =
         match u with
         | Term.Variable u as x ->
             match Map.tryFind u s.Substitution with
             | None -> x
-            | Some subst -> subst
+            | Some subst -> walk subst s
         | u -> u
 
     let private extend (v : Variable) (t : Term) (s : State) =
@@ -87,27 +93,27 @@ module Goal =
                 $"Incorrect unify return parameter should have been Option<State>: {unifyMethod.ReturnParameter.ParameterType}"
 
         match unifyMethod.GetParameters () with
-        | [| unifyParam ; name1Param ; args1Param ; name2Param ; args2Param ; stateParam |] ->
+        | [| unifyParam ; _name1Param ; args1Param ; _name2Param ; args2Param ; stateParam |] ->
             let wrongParams =
                 [
                     let t =
                         typeof<Term -> Term -> State -> State option>
 
                     if unifyParam.ParameterType <> t then
-                        yield nameof (unifyParam), t
+                        yield nameof unifyParam, t
 
                     let t = typeof<Term list>
 
                     if args1Param.ParameterType <> t then
-                        yield nameof (args1Param), t
+                        yield nameof args1Param, t
 
                     if args2Param.ParameterType <> t then
-                        yield nameof (args2Param), t
+                        yield nameof args2Param, t
 
                     let t = typeof<State>
 
                     if stateParam.ParameterType <> t then
-                        yield nameof (stateParam), t
+                        yield nameof stateParam, t
                 ]
 
             match wrongParams with
@@ -138,9 +144,9 @@ module Goal =
         | parameters -> failwith $"Incorrect unify parameters: {parameters |> Array.toList}"
 
 
-    and private unify (u : Term) (v : Term) (s : State) : State option =
-        let u = walk u s
-        let v = walk v s
+    and private unify (uIn : Term) (vIn : Term) (s : State) : State option =
+        let u = walk uIn s
+        let v = walk vIn s
 
         match u, v with
         | Term.Variable u, Term.Variable v when u = v -> s |> Some
@@ -176,7 +182,15 @@ module Goal =
 
         | _, _ -> None
 
-    let rec private evaluate' (goal : Goal) (state : State) : Stream =
+    let rec private evaluate' (debug : bool) (goal : Goal) (state : State) : Stream =
+        if debug then
+            let varState =
+                state.Substitution
+                |> Map.toSeq
+                |> Seq.map (fun (v, t) -> $"{v}: {t}")
+                |> String.concat ","
+            printfn $"Evaluating: {goal} ({varState})"
+
         match goal with
         | Goal.Equiv (t1, t2) ->
             match unify t1 t2 state with
@@ -187,12 +201,15 @@ module Goal =
 
             Stream.Procedure (fun () ->
                 evaluate'
+                    debug
                     (goal newVar)
                     { state with
                         VariableCounter = Variable.incr state.VariableCounter
                     }
             )
-        | Goal.Disj (goal1, goal2) -> Stream.union (evaluate' goal1 state) (evaluate' goal2 state)
-        | Goal.Conj (goal1, goal2) -> Stream.bind (evaluate' goal1 state) (evaluate' goal2)
+        | Goal.Disj (goal1, goal2) ->
+            Stream.union (evaluate' debug goal1 state) (evaluate' debug goal2 state)
+        | Goal.Conj (goal1, goal2) -> Stream.bind (evaluate' debug goal1 state) (evaluate' debug goal2)
+        | Goal.Delay g -> Stream.Procedure (fun () -> evaluate' debug (g ()) state)
 
-    let evaluate (goal : Goal) = evaluate' goal State.empty
+    let evaluate (goal : Goal) = evaluate' false goal State.empty

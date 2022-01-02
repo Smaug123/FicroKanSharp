@@ -83,34 +83,28 @@ module Recursive =
                 (child t1 t2)
                 (TypedTerm.Goal.callFresh (fun z -> Goal.conj (child t1 z) (Goal.delay (fun () -> descend z t2))))
 
-        let emptyStream =
-            child (TypedTerm.literal (Human "anne")) (TypedTerm.literal (Human "donna"))
-            |> Goal.evaluate
-            |> Stream.peel
-
-        match emptyStream with
-        | None -> ()
-        | Some s -> failwith $"{s}"
+        child (TypedTerm.literal (Human "anne")) (TypedTerm.literal (Human "donna"))
+        |> Goal.evaluate
+        |> Stream.toList
+        |> shouldBeEmpty
 
         child (TypedTerm.literal (Human "anne")) (TypedTerm.literal (Human "bridget"))
         |> Goal.evaluate
-        |> Stream.peel
-        |> Option.get
-        |> fst
+        |> Stream.toList
+        |> List.exactlyOne
         |> shouldEqual (Map.ofList [])
 
         descend (TypedTerm.literal (Human "anne")) (TypedTerm.literal (Human "donna"))
         |> Goal.evaluate
-        |> Stream.peel
-        |> Option.get
-        |> fst
+        |> Stream.toList
+        |> List.exactlyOne
         |> shouldEqual (
             Map.ofList
                 [
                     VariableCount 0,
                     TypedTerm.literal (Human "bridget")
                     |> TypedTerm.compile
-                    VariableCount 2,
+                    VariableCount 1,
                     TypedTerm.literal (Human "caroline")
                     |> TypedTerm.compile
                 ]

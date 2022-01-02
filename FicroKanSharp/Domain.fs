@@ -30,13 +30,20 @@ type Goal =
     | Disj of Goal * Goal
     | Conj of Goal * Goal
     | Fresh of (Variable -> Goal)
+    | Delay of (unit -> Goal)
+
+    member private this.ToString (variableCount : int) : string =
+        match this with
+        | Fresh g ->
+            if variableCount > 4 then "<exists x: ...>" else
+            $"exists x{variableCount}: ({(g (VariableCount variableCount)).ToString (variableCount + 1)})"
+        | Conj (g1, g2) -> sprintf "((%s) AND (%s))" (g1.ToString variableCount) (g2.ToString variableCount)
+        | Disj (g1, g2) -> sprintf "((%s) OR  (%s))" (g1.ToString variableCount) (g2.ToString variableCount)
+        | Equiv (g1, g2) -> sprintf "(%O) == (%O)" g1 g2
+        | Delay g -> sprintf "delayed (%O)" (g().ToString (variableCount))
 
     override this.ToString () =
-        match this with
-        | Fresh _ -> "<exists x such that...>"
-        | Conj (g1, g2) -> sprintf "((%O) AND (%O))" g1 g2
-        | Disj (g1, g2) -> sprintf "((%O) OR  (%O))" g1 g2
-        | Equiv (g1, g2) -> sprintf "(%O) == (%O)" g1 g2
+        this.ToString 0
 
 /// This type is public so that the user can define their own Unify methods.
 type State =

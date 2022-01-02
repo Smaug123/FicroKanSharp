@@ -32,3 +32,16 @@ module Reify =
 
                 yield! withRespectToFirst other
         }
+
+    let satisfiable (s : Stream) : bool =
+        match Stream.peel s with
+        | None -> false
+        | Some _ -> true
+
+    let satisfiableExactlyOnce (s : Stream) : bool =
+        match Stream.peel s with
+        | None -> false
+        | Some (_, other) ->
+            match Stream.peel other with
+            | None -> true
+            | Some _ -> failwith "expected exactly one solution"

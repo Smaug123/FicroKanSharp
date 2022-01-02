@@ -1,6 +1,7 @@
 namespace FicroKanSharp
 
 open System
+open System.Collections.Generic
 open System.Reflection
 open FicroKanSharp
 open FSharp.Reflection
@@ -155,14 +156,10 @@ module TypedTerm =
         else
             t
 
-    let rec private toUntypedLiteral (t : obj) : Term =
-        let ty = t.GetType ()
-
+    let rec private toUntypedLiteral' (ty : Type) : obj -> Term =
         if ty = typeof<Variable> then
-            Term.Variable (unbox t)
+            fun t -> Term.Variable (unbox t)
         elif FSharpType.IsUnion ty then
-            let fieldU, valuesU = FSharpValue.GetUnionFields (t, ty)
-
             let toTermList (o : obj []) : Term list =
                 o
                 |> List.ofArray
@@ -177,23 +174,41 @@ module TypedTerm =
                         toUntypedLiteral o
                 )
 
-            let valuesU = toTermList valuesU
+            let resolved = resolveGeneric ty
 
-            Term.Symbol (
-                {
-                    UserType = resolveGeneric ty
-                    FieldValue = fieldU.Name
-                },
-                valuesU
-            )
+            fun t ->
+                let fieldU, valuesU = FSharpValue.GetUnionFields (t, ty)
+                let valuesU = toTermList valuesU
+
+                Term.Symbol (
+                    {
+                        UserType = resolved
+                        FieldValue = fieldU.Name
+                    },
+                    valuesU
+                )
         else
-            Term.Symbol (
-                {
-                    UserType = resolveGeneric ty
-                    FieldValue = t
-                },
-                []
-            )
+            let resolved = resolveGeneric ty
+            fun t ->
+                Term.Symbol (
+                    {
+                        UserType = resolved
+                        FieldValue = t
+                    },
+                    []
+                )
+
+    and private cache = Dictionary<Type, obj -> Term> ()
+
+    and private toUntypedLiteral (o : obj) : Term =
+        let ty = o.GetType ()
+        match cache.TryGetValue ty with
+        | false, _ ->
+            let ans = toUntypedLiteral' (o.GetType ())
+            cache.Add (ty, ans)
+            ans o
+        | true, f ->
+            f o
 
     and private compileUntyped : Type -> obj -> Term =
         let m =
