@@ -10,21 +10,83 @@ type TypedTerm<'a> =
     | Term of Term
     | Literal of 'a
 
-[<NoComparison>]
-type internal TypeName<'a when 'a : equality> =
+type private FSharpUnionCase =
     {
-        UserType : Type
-        FieldValue : 'a
+        Name : string
+        Fields : PropertyInfo[]
+        Constructor : obj[] -> obj
     }
 
-    member this.Unbox<'b when 'b : equality> () =
+[<NoComparison ; CustomEquality>]
+type internal TypeName<'a when 'a : equality> =
+    private
         {
-            UserType = this.UserType
-            FieldValue = unbox<'b> this.FieldValue
+            UserType : Type
+            FieldValue : 'a
+            UnionCases : (FSharpUnionCase array * (obj -> int)) option
         }
 
-    override this.ToString () =
-        $"{this.FieldValue}<%s{this.UserType.Name}>"
+    override this.Equals (other : obj) : bool =
+        match other with
+        | :? TypeName<'a> as other ->
+            this.UserType = other.UserType && this.FieldValue = other.FieldValue
+        | _ -> false
+
+    override this.GetHashCode () =
+        hash (this.UserType, this.FieldValue)
+
+    member private t1.Decompile (args : Term list) : obj =
+        match t1.UnionCases with
+        | None ->
+            t1.FieldValue :> obj
+        | Some (cases, tagDiscriminator) ->
+
+        if t1.FieldValue.GetType () = typeof<string> then
+            let case =
+                cases
+                |> Array.find (fun case -> case.Name = unbox<string> t1.FieldValue)
+
+            args
+            |> List.mapi (fun i term ->
+                let expectedType = case.Fields.[i].PropertyType
+
+                match term with
+                | Term.Symbol (name, args) ->
+                    let mi =
+                        name
+                            .GetType()
+                            .GetMethod(
+                                "Unbox",
+                                BindingFlags.Public
+                                ||| BindingFlags.NonPublic
+                                ||| BindingFlags.Instance
+                            )
+                            .MakeGenericMethod typeof<obj>
+
+                    let unboxed = mi.Invoke (name, [||]) |> unbox<TypeName<obj>>
+                    let result = unboxed.Decompile args
+
+                    if expectedType.IsGenericType
+                       && expectedType.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>> then
+                        let unionCase =
+                            FSharpType.GetUnionCases expectedType
+                            |> Array.find (fun uc -> uc.Name = "Literal")
+
+                        FSharpValue.MakeUnion (unionCase, [| result |])
+                    else
+                        result
+                | Term.Variable _ as var ->
+                    let typedTermUci =
+                        typedefof<TypedTerm<obj>>.MakeGenericType expectedType.GenericTypeArguments
+                        |> FSharpType.GetUnionCases
+                        |> Array.find (fun uci -> uci.Name = "Term")
+
+                    FSharpValue.MakeUnion (typedTermUci, [| unbox var |])
+            )
+            |> Array.ofList
+            |> case.Constructor
+        else
+            t1.FieldValue :> obj
 
     static member Unify
         (unify : Term -> Term -> State -> State option)
@@ -81,67 +143,24 @@ type internal TypeName<'a when 'a : equality> =
         | parameters ->
             failwith $"Wrong parameter count on Unify method of type {t1.UserType.Name}: {Array.toList parameters}"
 
-        let rec decompile (t1 : TypeName<obj>) (args : Term list) : obj =
-            if FSharpType.IsUnion t1.UserType
-               && t1.FieldValue.GetType () = typeof<string> then
-                let unionCases = FSharpType.GetUnionCases t1.UserType
-
-                let case =
-                    unionCases
-                    |> Array.find (fun case -> case.Name = unbox<string> t1.FieldValue)
-
-                let fields = case.GetFields ()
-
-                args
-                |> List.mapi (fun i term ->
-                    let expectedType = fields.[i].PropertyType
-
-                    match term with
-                    | Term.Symbol (name, args) ->
-                        let mi =
-                            name
-                                .GetType()
-                                .GetMethod(
-                                    "Unbox",
-                                    BindingFlags.Public
-                                    ||| BindingFlags.NonPublic
-                                    ||| BindingFlags.Instance
-                                )
-                                .MakeGenericMethod typeof<obj>
-
-                        let unboxed = mi.Invoke (name, [||])
-                        let result = decompile (unbox unboxed) args
-
-                        if expectedType.IsGenericType
-                           && expectedType.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>> then
-                            let unionCase =
-                                FSharpType.GetUnionCases expectedType
-                                |> Array.find (fun uc -> uc.Name = "Literal")
-
-                            FSharpValue.MakeUnion (unionCase, [| result |])
-                        else
-                            result
-                    | Term.Variable _ as var ->
-                        let typedTermUci =
-                            typedefof<TypedTerm<obj>>.MakeGenericType expectedType.GenericTypeArguments
-                            |> FSharpType.GetUnionCases
-                            |> Array.find (fun uci -> uci.Name = "Term")
-
-                        FSharpValue.MakeUnion (typedTermUci, [| unbox var |])
-                )
-                |> Array.ofList
-                |> fun i -> FSharpValue.MakeUnion (case, i)
-            else
-                t1.FieldValue
-
-        let t1 = decompile (t1.Unbox<obj> ()) args1
-        let t2 = decompile (t2.Unbox<obj> ()) args2
+        let t1 = t1.Decompile args1
+        let t2 = t2.Decompile args2
 
         let result =
             unifyMethod.Invoke (typeof<'a>, [| unify ; t1 ; t2 ; state |])
             |> unbox<State option>
 
         result
+
+    member this.Unbox<'b when 'b : equality> () =
+        {
+            UserType = this.UserType
+            FieldValue = unbox<'b> this.FieldValue
+            UnionCases = this.UnionCases
+        }
+
+    override this.ToString () =
+        $"{this.FieldValue}<%s{this.UserType.Name}>"
 
 [<RequireQualifiedAccess>]
 module TypedTerm =
@@ -176,16 +195,31 @@ module TypedTerm =
 
             let resolved = resolveGeneric ty
 
+            let precomputed = FSharpValue.PreComputeUnionTagReader ty
+            let cases =
+                FSharpType.GetUnionCases ty
+                |> Array.map (fun case ->
+                    {
+                        Name = case.Name
+                        Constructor = FSharpValue.PreComputeUnionConstructor case
+                        Fields = case.GetFields ()
+                    }
+                )
+
             fun t ->
-                let fieldU, valuesU = FSharpValue.GetUnionFields (t, ty)
-                let valuesU = toTermList valuesU
+                let case = cases.[precomputed t]
+                let values =
+                    case.Fields
+                    |> Array.map (fun pi -> pi.GetValue t)
+                    |> toTermList
 
                 Term.Symbol (
                     {
                         UserType = resolved
-                        FieldValue = fieldU.Name
+                        FieldValue = case.Name
+                        UnionCases = Some (cases, precomputed)
                     },
-                    valuesU
+                    values
                 )
         else
             let resolved = resolveGeneric ty
@@ -194,6 +228,7 @@ module TypedTerm =
                     {
                         UserType = resolved
                         FieldValue = t
+                        UnionCases = None
                     },
                     []
                 )
