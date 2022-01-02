@@ -189,6 +189,7 @@ module Goal =
                 |> Map.toSeq
                 |> Seq.map (fun (v, t) -> $"{v}: {t}")
                 |> String.concat ","
+
             printfn $"Evaluating: {goal} ({varState})"
 
         match goal with
@@ -207,8 +208,7 @@ module Goal =
                         VariableCounter = Variable.incr state.VariableCounter
                     }
             )
-        | Goal.Disj (goal1, goal2) ->
-            Stream.union (evaluate' debug goal1 state) (evaluate' debug goal2 state)
+        | Goal.Disj (goal1, goal2) -> Stream.union (evaluate' debug goal1 state) (evaluate' debug goal2 state)
         | Goal.Conj (goal1, goal2) -> Stream.bind (evaluate' debug goal1 state) (evaluate' debug goal2)
         | Goal.Delay g -> Stream.Procedure (fun () -> evaluate' debug (g ()) state)
 

@@ -76,17 +76,21 @@ module TestThing =
 
         Goal.evaluate (Goal.callFresh fives)
         |> Stream.take 3
-        |> shouldEqual [
-            Map.ofList [
-                Variable.VariableCount 0, Term.Symbol (5, [])
+        |> shouldEqual
+            [
+                Map.ofList
+                    [
+                        Variable.VariableCount 0, Term.Symbol (5, [])
+                    ]
+                Map.ofList
+                    [
+                        Variable.VariableCount 0, Term.Symbol (5, [])
+                    ]
+                Map.ofList
+                    [
+                        Variable.VariableCount 0, Term.Symbol (5, [])
+                    ]
             ]
-            Map.ofList [
-                Variable.VariableCount 0, Term.Symbol (5, [])
-            ]
-            Map.ofList [
-                Variable.VariableCount 0, Term.Symbol (5, [])
-            ]
-        ]
 
     [<Fact>]
     let ``Another recursive example`` () =
@@ -149,18 +153,16 @@ module TestThing =
     [<Fact>]
     let ``Unification works transitively`` () =
         Goal.callFresh (fun twon -> // 0
+
             let succCase =
                 Goal.callFresh (fun n ->
-                        Goal.conj
-                            (Goal.equiv (Term.Variable twon) (Term.Variable n))
-                            (Goal.equiv (Term.Symbol ("something", [])) (Term.Variable twon))
+                    Goal.conj
+                        (Goal.equiv (Term.Variable twon) (Term.Variable n))
+                        (Goal.equiv (Term.Symbol ("something", [])) (Term.Variable twon))
                 )
 
-            Goal.conj
-                succCase
-                (Goal.equiv (Term.Variable twon) (Term.Symbol ("another", [])))
+            Goal.conj succCase (Goal.equiv (Term.Variable twon) (Term.Symbol ("another", [])))
         )
         |> Goal.evaluate
         |> Reify.withRespectToFirst
         |> shouldBeEmpty
-

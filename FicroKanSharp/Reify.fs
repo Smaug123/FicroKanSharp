@@ -42,6 +42,7 @@ module Reify =
         match Stream.peel s with
         | None -> false
         | Some (_, other) ->
-            match Stream.peel other with
-            | None -> true
-            | Some _ -> failwith "expected exactly one solution"
+
+        match Stream.peel other with
+        | None -> true
+        | Some _ -> failwith "expected exactly one solution"

@@ -12,8 +12,8 @@ type TypedTerm<'a> =
 
 type private TermConstructor =
     {
-        Literal : obj[] -> obj
-        Term : obj[] -> obj
+        Literal : obj [] -> obj
+        Term : obj [] -> obj
     }
 
 type private FSharpUnionCase =
@@ -21,8 +21,8 @@ type private FSharpUnionCase =
         Name : string
         /// The PropertyInfo for the field, and the Literal case constructor of the TypedTerm
         /// if it is one
-        Fields : (PropertyInfo * Option<TermConstructor>)[]
-        Constructor : obj[] -> obj
+        Fields : (PropertyInfo * Option<TermConstructor>) []
+        Constructor : obj [] -> obj
     }
 
 [<NoComparison ; CustomEquality>]
@@ -38,57 +38,56 @@ type internal TypeName<'a when 'a : equality> =
     override this.Equals (other : obj) : bool =
         match other with
         | :? TypeName<'a> as other ->
-            this.UserType = other.UserType && this.FieldValue = other.FieldValue
+            this.UserType = other.UserType
+            && this.FieldValue = other.FieldValue
         | _ -> false
 
-    override this.GetHashCode () =
-        hash (this.UserType, this.FieldValue)
+    override this.GetHashCode () = hash (this.UserType, this.FieldValue)
 
     member private t1.Decompile (args : Term list) : obj =
         match t1.UnionCases with
-        | None ->
-            t1.FieldValue :> obj
+        | None -> t1.FieldValue :> obj
         | Some (cases, tagDiscriminator) ->
 
-        if t1.FieldValue.GetType () = typeof<string> then
-            let case =
-                cases
-                |> Array.find (fun case -> case.Name = unbox<string> t1.FieldValue)
+            if t1.FieldValue.GetType () = typeof<string> then
+                let case =
+                    cases
+                    |> Array.find (fun case -> case.Name = unbox<string> t1.FieldValue)
 
-            args
-            |> List.mapi (fun i term ->
-                let _, isTypedTerm = case.Fields.[i]
+                args
+                |> List.mapi (fun i term ->
+                    let _, isTypedTerm = case.Fields.[i]
 
-                match term with
-                | Term.Symbol (name, args) ->
-                    let mi =
-                        name
-                            .GetType()
-                            .GetMethod(
-                                "Unbox",
-                                BindingFlags.Public
-                                ||| BindingFlags.NonPublic
-                                ||| BindingFlags.Instance
-                            )
-                            .MakeGenericMethod typeof<obj>
+                    match term with
+                    | Term.Symbol (name, args) ->
+                        let mi =
+                            name
+                                .GetType()
+                                .GetMethod(
+                                    "Unbox",
+                                    BindingFlags.Public
+                                    ||| BindingFlags.NonPublic
+                                    ||| BindingFlags.Instance
+                                )
+                                .MakeGenericMethod typeof<obj>
 
-                    let unboxed = mi.Invoke (name, [||]) |> unbox<TypeName<obj>>
-                    let result = unboxed.Decompile args
+                        let unboxed =
+                            mi.Invoke (name, [||]) |> unbox<TypeName<obj>>
 
-                    match isTypedTerm with
-                    | Some termConstructor ->
-                        termConstructor.Literal [| result |]
-                    | None ->
-                        result
-                | Term.Variable _ as var ->
-                    match isTypedTerm with
-                    | Some cons -> cons.Term [| unbox var |]
-                    | None -> failwith "unexpected"
-            )
-            |> Array.ofList
-            |> case.Constructor
-        else
-            t1.FieldValue :> obj
+                        let result = unboxed.Decompile args
+
+                        match isTypedTerm with
+                        | Some termConstructor -> termConstructor.Literal [| result |]
+                        | None -> result
+                    | Term.Variable _ as var ->
+                        match isTypedTerm with
+                        | Some cons -> cons.Term [| unbox var |]
+                        | None -> failwith "unexpected"
+                )
+                |> Array.ofList
+                |> case.Constructor
+            else
+                t1.FieldValue :> obj
 
     static member Unify
         (unify : Term -> Term -> State -> State option)
@@ -198,6 +197,7 @@ module TypedTerm =
             let resolved = resolveGeneric ty
 
             let precomputed = FSharpValue.PreComputeUnionTagReader ty
+
             let cases =
                 FSharpType.GetUnionCases ty
                 |> Array.map (fun case ->
@@ -208,24 +208,32 @@ module TypedTerm =
                             case.GetFields ()
                             |> Array.map (fun pi ->
                                 let ty = pi.PropertyType
-                                let isTypedTerm = ty.IsGenericType && ty.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>>
+
+                                let isTypedTerm =
+                                    ty.IsGenericType
+                                    && ty.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>>
+
                                 let constructor =
                                     if isTypedTerm then
                                         let literalCons =
                                             FSharpType.GetUnionCases ty
                                             |> Array.find (fun uc -> uc.Name = "Literal")
                                             |> FSharpValue.PreComputeUnionConstructor
+
                                         let termCons =
                                             typedefof<TypedTerm<obj>>.MakeGenericType ty.GenericTypeArguments
                                             |> FSharpType.GetUnionCases
                                             |> Array.find (fun uc -> uc.Name = "Term")
                                             |> FSharpValue.PreComputeUnionConstructor
+
                                         {
                                             Literal = literalCons
                                             Term = termCons
                                         }
                                         |> Some
-                                    else None
+                                    else
+                                        None
+
                                 pi, constructor
                             )
                     }
@@ -233,6 +241,7 @@ module TypedTerm =
 
             fun t ->
                 let case = cases.[precomputed t]
+
                 let values =
                     case.Fields
                     |> Array.map (fun (pi, _) -> pi.GetValue t)
@@ -248,6 +257,7 @@ module TypedTerm =
                 )
         else
             let resolved = resolveGeneric ty
+
             fun t ->
                 Term.Symbol (
                     {
@@ -262,13 +272,13 @@ module TypedTerm =
 
     and private toUntypedLiteral (o : obj) : Term =
         let ty = o.GetType ()
+
         match cache.TryGetValue ty with
         | false, _ ->
             let ans = toUntypedLiteral' (o.GetType ())
             cache.Add (ty, ans)
             ans o
-        | true, f ->
-            f o
+        | true, f -> f o
 
     and private compileUntyped : Type -> obj -> Term =
         let m =
