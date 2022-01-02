@@ -10,10 +10,18 @@ type TypedTerm<'a> =
     | Term of Term
     | Literal of 'a
 
+type private TermConstructor =
+    {
+        Literal : obj[] -> obj
+        Term : obj[] -> obj
+    }
+
 type private FSharpUnionCase =
     {
         Name : string
-        Fields : PropertyInfo[]
+        /// The PropertyInfo for the field, and the Literal case constructor of the TypedTerm
+        /// if it is one
+        Fields : (PropertyInfo * Option<TermConstructor>)[]
         Constructor : obj[] -> obj
     }
 
@@ -23,6 +31,7 @@ type internal TypeName<'a when 'a : equality> =
         {
             UserType : Type
             FieldValue : 'a
+            /// The cases of UserType
             UnionCases : (FSharpUnionCase array * (obj -> int)) option
         }
 
@@ -48,7 +57,7 @@ type internal TypeName<'a when 'a : equality> =
 
             args
             |> List.mapi (fun i term ->
-                let expectedType = case.Fields.[i].PropertyType
+                let _, isTypedTerm = case.Fields.[i]
 
                 match term with
                 | Term.Symbol (name, args) ->
@@ -66,22 +75,15 @@ type internal TypeName<'a when 'a : equality> =
                     let unboxed = mi.Invoke (name, [||]) |> unbox<TypeName<obj>>
                     let result = unboxed.Decompile args
 
-                    if expectedType.IsGenericType
-                       && expectedType.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>> then
-                        let unionCase =
-                            FSharpType.GetUnionCases expectedType
-                            |> Array.find (fun uc -> uc.Name = "Literal")
-
-                        FSharpValue.MakeUnion (unionCase, [| result |])
-                    else
+                    match isTypedTerm with
+                    | Some termConstructor ->
+                        termConstructor.Literal [| result |]
+                    | None ->
                         result
                 | Term.Variable _ as var ->
-                    let typedTermUci =
-                        typedefof<TypedTerm<obj>>.MakeGenericType expectedType.GenericTypeArguments
-                        |> FSharpType.GetUnionCases
-                        |> Array.find (fun uci -> uci.Name = "Term")
-
-                    FSharpValue.MakeUnion (typedTermUci, [| unbox var |])
+                    match isTypedTerm with
+                    | Some cons -> cons.Term [| unbox var |]
+                    | None -> failwith "unexpected"
             )
             |> Array.ofList
             |> case.Constructor
@@ -202,7 +204,30 @@ module TypedTerm =
                     {
                         Name = case.Name
                         Constructor = FSharpValue.PreComputeUnionConstructor case
-                        Fields = case.GetFields ()
+                        Fields =
+                            case.GetFields ()
+                            |> Array.map (fun pi ->
+                                let ty = pi.PropertyType
+                                let isTypedTerm = ty.IsGenericType && ty.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>>
+                                let constructor =
+                                    if isTypedTerm then
+                                        let literalCons =
+                                            FSharpType.GetUnionCases ty
+                                            |> Array.find (fun uc -> uc.Name = "Literal")
+                                            |> FSharpValue.PreComputeUnionConstructor
+                                        let termCons =
+                                            typedefof<TypedTerm<obj>>.MakeGenericType ty.GenericTypeArguments
+                                            |> FSharpType.GetUnionCases
+                                            |> Array.find (fun uc -> uc.Name = "Term")
+                                            |> FSharpValue.PreComputeUnionConstructor
+                                        {
+                                            Literal = literalCons
+                                            Term = termCons
+                                        }
+                                        |> Some
+                                    else None
+                                pi, constructor
+                            )
                     }
                 )
 
@@ -210,7 +235,7 @@ module TypedTerm =
                 let case = cases.[precomputed t]
                 let values =
                     case.Fields
-                    |> Array.map (fun pi -> pi.GetValue t)
+                    |> Array.map (fun (pi, _) -> pi.GetValue t)
                     |> toTermList
 
                 Term.Symbol (
