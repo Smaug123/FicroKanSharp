@@ -74,40 +74,23 @@ module TestThing =
         let rec fives (x : Variable) =
             (Goal.disj (Goal.equiv (Term.Variable x) (Term.Symbol (5, []))) (Goal.delay (fun () -> fives x)))
 
-        let u = Goal.evaluate (Goal.callFresh fives)
-
-        match u |> Stream.peel with
-        | None -> failwith "oh no"
-        | Some (s, rest) ->
-
-        s
-        |> Map.toList
+        Goal.evaluate (Goal.callFresh fives)
+        |> Stream.take 3
         |> shouldEqual
             [
-                Variable.VariableCount 0, Term.Symbol (5, [])
+                Map.ofList
+                    [
+                        Variable.VariableCount 0, Term.Symbol (5, [])
+                    ]
+                Map.ofList
+                    [
+                        Variable.VariableCount 0, Term.Symbol (5, [])
+                    ]
+                Map.ofList
+                    [
+                        Variable.VariableCount 0, Term.Symbol (5, [])
+                    ]
             ]
-
-        match Stream.peel rest with
-        | None -> failwith "oh no"
-        | Some (s, rest) ->
-
-        s
-        |> Map.toList
-        |> shouldEqual
-            [
-                Variable.VariableCount 0, Term.Symbol (5, [])
-            ]
-
-        match Stream.peel rest with
-        | None -> failwith "oh no"
-        | Some (s, _rest) ->
-
-            s
-            |> Map.toList
-            |> shouldEqual
-                [
-                    Variable.VariableCount 0, Term.Symbol (5, [])
-                ]
 
     [<Fact>]
     let ``Another recursive example`` () =
@@ -117,8 +100,7 @@ module TestThing =
         let rec sixes (x : Variable) =
             (Goal.disj (Goal.equiv (Term.Variable x) (Term.Symbol (6, []))) (Goal.delay (fun () -> sixes x)))
 
-        let fivesAndSixes =
-            Goal.callFresh (fun x -> Goal.disj (fives x) (sixes x))
+        let fivesAndSixes = Goal.callFresh (fun x -> Goal.disj (fives x) (sixes x))
 
         let u = Goal.evaluate fivesAndSixes
 
@@ -165,3 +147,21 @@ module TestThing =
                 [
                     Variable.VariableCount 0, Term.Symbol (6, [])
                 ]
+
+    /// This arose because x0 unified to x1, x1 unified to 1, but x0 didn't get reduced to 1 by `walk`.
+    [<Fact>]
+    let ``Unification works transitively`` () =
+        Goal.callFresh (fun twon -> // 0
+
+            let succCase =
+                Goal.callFresh (fun n ->
+                    Goal.conj
+                        (Goal.equiv (Term.Variable twon) (Term.Variable n))
+                        (Goal.equiv (Term.Symbol ("something", [])) (Term.Variable twon))
+                )
+
+            Goal.conj succCase (Goal.equiv (Term.Variable twon) (Term.Symbol ("another", [])))
+        )
+        |> Goal.evaluate
+        |> Reify.withRespectToFirst
+        |> shouldBeEmpty

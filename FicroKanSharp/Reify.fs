@@ -12,33 +12,37 @@ module Reify =
 
         go [] l
 
-    let rec reify (state : Map<Variable, Term>) (term : Term) : Term option =
+    let rec reify (state : Map<Variable, Term>) (term : Term) : Term =
         match term with
-        | Term.Variable v -> Map.tryFind v state |> Option.bind (reify state)
+        | Term.Variable v -> Map.find v state |> reify state
         | Term.Symbol (name, args) ->
 
-        let args =
-            args |> List.map (reify state) |> collectList
+        let args = args |> List.map (reify state)
 
-        match args with
-        | None -> None
-        | Some args ->
-
-        Term.Symbol (name, args) |> Some
+        Term.Symbol (name, args)
 
     let rec withRespectToFirst (s : Stream) : seq<Term option> =
         seq {
             match Stream.peel s with
             | None -> ()
             | Some (first, other) ->
-                yield
-                    reify
-                        first
-                        (first
-                         |> Map.toSeq
-                         |> Seq.head
-                         |> fst
-                         |> Term.Variable)
+                match Map.toSeq first |> Seq.tryHead with
+                | None -> yield None
+                | Some (variable, _) -> yield Some (reify first (Term.Variable variable))
 
                 yield! withRespectToFirst other
         }
+
+    let satisfiable (s : Stream) : bool =
+        match Stream.peel s with
+        | None -> false
+        | Some _ -> true
+
+    let satisfiableExactlyOnce (s : Stream) : bool =
+        match Stream.peel s with
+        | None -> false
+        | Some (_, other) ->
+
+        match Stream.peel other with
+        | None -> true
+        | Some _ -> failwith "expected exactly one solution"

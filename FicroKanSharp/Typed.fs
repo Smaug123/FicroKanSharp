@@ -1,20 +1,165 @@
 namespace FicroKanSharp
 
 open System
-open Microsoft.FSharp.Reflection
+open System.Collections.Generic
+open System.Reflection
+open FicroKanSharp
+open FSharp.Reflection
 
 type TypedTerm<'a> =
     | Term of Term
     | Literal of 'a
 
-type internal TypeName<'a> =
+type private TermConstructor =
     {
-        UserType : Type
-        FieldValue : 'a
+        Literal : obj [] -> obj
+        Term : obj [] -> obj
     }
 
+type private FSharpUnionCase =
+    {
+        Name : string
+        /// The PropertyInfo for the field, and the Literal case constructor of the TypedTerm
+        /// if it is one
+        Fields : (PropertyInfo * Option<TermConstructor>) []
+        Constructor : obj [] -> obj
+    }
+
+[<NoComparison ; CustomEquality>]
+type internal TypeName<'a when 'a : equality> =
+    private
+        {
+            UserType : Type
+            FieldValue : 'a
+            /// The cases of UserType
+            UnionCases : (FSharpUnionCase array * (obj -> int)) option
+        }
+
+    override this.Equals (other : obj) : bool =
+        match other with
+        | :? TypeName<'a> as other ->
+            this.UserType = other.UserType
+            && this.FieldValue = other.FieldValue
+        | _ -> false
+
+    override this.GetHashCode () = hash (this.UserType, this.FieldValue)
+
+    member private t1.Decompile (args : Term list) : obj =
+        match t1.UnionCases with
+        | None -> t1.FieldValue :> obj
+        | Some (cases, tagDiscriminator) ->
+
+            if t1.FieldValue.GetType () = typeof<string> then
+                let case =
+                    cases
+                    |> Array.find (fun case -> case.Name = unbox<string> t1.FieldValue)
+
+                args
+                |> List.mapi (fun i term ->
+                    let _, isTypedTerm = case.Fields.[i]
+
+                    match term with
+                    | Term.Symbol (name, args) ->
+                        let mi =
+                            name
+                                .GetType()
+                                .GetMethod(
+                                    "Unbox",
+                                    BindingFlags.Public
+                                    ||| BindingFlags.NonPublic
+                                    ||| BindingFlags.Instance
+                                )
+                                .MakeGenericMethod typeof<obj>
+
+                        let unboxed = mi.Invoke (name, [||]) |> unbox<TypeName<obj>>
+
+                        let result = unboxed.Decompile args
+
+                        match isTypedTerm with
+                        | Some termConstructor -> termConstructor.Literal [| result |]
+                        | None -> result
+                    | Term.Variable _ as var ->
+                        match isTypedTerm with
+                        | Some cons -> cons.Term [| unbox var |]
+                        | None -> failwith "unexpected"
+                )
+                |> Array.ofList
+                |> case.Constructor
+            else
+                t1.FieldValue :> obj
+
+    static member Unify
+        (unify : Term -> Term -> State -> State option)
+        (t1 : TypeName<'a>)
+        (args1 : Term list)
+        (t2 : TypeName<'a>)
+        (args2 : Term list)
+        (state : State)
+        : State option
+        =
+        let unifyMethod =
+            t1.UserType.GetMethod (
+                "Unify",
+                BindingFlags.Static
+                ||| BindingFlags.Public
+                ||| BindingFlags.FlattenHierarchy
+                ||| BindingFlags.NonPublic
+            )
+
+        if obj.ReferenceEquals (unifyMethod, null) then
+            None
+        else
+
+        if unifyMethod.ReturnParameter.ParameterType
+           <> typeof<State option> then
+            failwith
+                $"Incorrect unify return parameter should have been Option<State>: {unifyMethod.ReturnParameter.ParameterType}"
+
+        match unifyMethod.GetParameters () with
+        | [| unifyParam ; _t1Param ; _t2Param ; stateParam |] ->
+            let wrongParams =
+                [
+                    let t = typeof<Term -> Term -> State -> State option>
+
+                    if unifyParam.ParameterType <> t then
+                        yield nameof unifyParam, t
+
+                    let t = typeof<State>
+
+                    if stateParam.ParameterType <> t then
+                        yield nameof stateParam, t
+                ]
+
+            match wrongParams with
+            | [] -> ()
+            | wrongParams ->
+                let wrongParams =
+                    wrongParams
+                    |> List.map (fun (s, ty) -> $"{s} (expected: {ty.Name})")
+                    |> String.concat "; "
+
+                failwith $"Wrong parameters on Unify method of type {t1.UserType.Name}: {wrongParams}"
+        | parameters ->
+            failwith $"Wrong parameter count on Unify method of type {t1.UserType.Name}: {Array.toList parameters}"
+
+        let t1 = t1.Decompile args1
+        let t2 = t2.Decompile args2
+
+        let result =
+            unifyMethod.Invoke (typeof<'a>, [| unify ; t1 ; t2 ; state |])
+            |> unbox<State option>
+
+        result
+
+    member this.Unbox<'b when 'b : equality> () =
+        {
+            UserType = this.UserType
+            FieldValue = unbox<'b> this.FieldValue
+            UnionCases = this.UnionCases
+        }
+
     override this.ToString () =
-        sprintf "%O<%s>" this.FieldValue this.UserType.Name
+        $"{this.FieldValue}<%s{this.UserType.Name}>"
 
 [<RequireQualifiedAccess>]
 module TypedTerm =
@@ -29,14 +174,10 @@ module TypedTerm =
         else
             t
 
-    let rec private toUntypedLiteral (t : obj) : Term =
-        let ty = t.GetType ()
-
+    let rec private toUntypedLiteral' (ty : Type) : obj -> Term =
         if ty = typeof<Variable> then
-            Term.Variable (unbox t)
+            fun t -> Term.Variable (unbox t)
         elif FSharpType.IsUnion ty then
-            let fieldU, valuesU = FSharpValue.GetUnionFields (t, ty)
-
             let toTermList (o : obj []) : Term list =
                 o
                 |> List.ofArray
@@ -51,27 +192,95 @@ module TypedTerm =
                         toUntypedLiteral o
                 )
 
-            let valuesU = toTermList valuesU
+            let resolved = resolveGeneric ty
 
-            Term.Symbol (
-                {
-                    UserType = resolveGeneric ty
-                    FieldValue = fieldU.Name
-                },
-                valuesU
-            )
+            let precomputed = FSharpValue.PreComputeUnionTagReader ty
+
+            let cases =
+                FSharpType.GetUnionCases ty
+                |> Array.map (fun case ->
+                    {
+                        Name = case.Name
+                        Constructor = FSharpValue.PreComputeUnionConstructor case
+                        Fields =
+                            case.GetFields ()
+                            |> Array.map (fun pi ->
+                                let ty = pi.PropertyType
+
+                                let isTypedTerm =
+                                    ty.IsGenericType
+                                    && ty.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>>
+
+                                let constructor =
+                                    if isTypedTerm then
+                                        let literalCons =
+                                            FSharpType.GetUnionCases ty
+                                            |> Array.find (fun uc -> uc.Name = "Literal")
+                                            |> FSharpValue.PreComputeUnionConstructor
+
+                                        let termCons =
+                                            typedefof<TypedTerm<obj>>.MakeGenericType ty.GenericTypeArguments
+                                            |> FSharpType.GetUnionCases
+                                            |> Array.find (fun uc -> uc.Name = "Term")
+                                            |> FSharpValue.PreComputeUnionConstructor
+
+                                        {
+                                            Literal = literalCons
+                                            Term = termCons
+                                        }
+                                        |> Some
+                                    else
+                                        None
+
+                                pi, constructor
+                            )
+                    }
+                )
+
+            fun t ->
+                let case = cases.[precomputed t]
+
+                let values =
+                    case.Fields
+                    |> Array.map (fun (pi, _) -> pi.GetValue t)
+                    |> toTermList
+
+                Term.Symbol (
+                    {
+                        UserType = resolved
+                        FieldValue = case.Name
+                        UnionCases = Some (cases, precomputed)
+                    },
+                    values
+                )
         else
+
+        let resolved = resolveGeneric ty
+
+        fun t ->
             Term.Symbol (
                 {
-                    UserType = resolveGeneric ty
+                    UserType = resolved
                     FieldValue = t
+                    UnionCases = None
                 },
                 []
             )
 
+    and private cache = Dictionary<Type, obj -> Term> ()
+
+    and private toUntypedLiteral (o : obj) : Term =
+        let ty = o.GetType ()
+
+        match cache.TryGetValue ty with
+        | false, _ ->
+            let ans = toUntypedLiteral' (o.GetType ())
+            cache.Add (ty, ans)
+            ans o
+        | true, f -> f o
+
     and private compileUntyped : Type -> obj -> Term =
-        let m =
-            Reflection.invokeStaticMethod <@ compile @>
+        let m = Reflection.invokeStaticMethod <@ compile @>
 
         fun tl o -> m [ tl ] [ o ] |> unbox
 

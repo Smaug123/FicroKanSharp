@@ -33,8 +33,7 @@ module Arithmetic =
                     )
                 )
 
-            let zeroCase =
-                Goal.conj (Goal.equiv x zero) (Goal.equiv y z)
+            let zeroCase = Goal.conj (Goal.equiv x zero) (Goal.equiv y z)
 
             Goal.disj zeroCase succCase
 
@@ -50,53 +49,31 @@ module Arithmetic =
                 [
                     VariableCount 0, ofInt 1
                     VariableCount 1, ofInt 3
-                    VariableCount 3, zero
-                    VariableCount 4, ofInt 2
+                    VariableCount 2, zero
+                    VariableCount 3, ofInt 2
                 ]
         )
 
         // Evaluate 1 + 1
         Goal.evaluate (Goal.callFresh (fun z -> pluso (ofInt 1) (ofInt 1) (Term.Variable z)))
-        |> Stream.toList
-        |> List.exactlyOne
-        |> shouldEqual (
-            Map.ofList
-                [
-                    VariableCount 0, succ (Term.Variable (VariableCount 2))
-                    VariableCount 1, ofInt 0
-                    VariableCount 2, ofInt 1
-                ]
-        )
+        |> Reify.withRespectToFirst
+        |> Seq.exactlyOne
+        |> Option.get
+        |> shouldEqual (ofInt 2)
 
         // Evaluate 2 + 2
         Goal.evaluate (Goal.callFresh (fun z -> pluso (ofInt 2) (ofInt 2) (Term.Variable z)))
-        |> Stream.toList
-        |> List.exactlyOne
-        |> shouldEqual (
-            Map.ofList
-                [
-                    VariableCount 0, succ (Term.Variable (VariableCount 2))
-                    VariableCount 1, ofInt 1
-                    VariableCount 2, succ (Term.Variable (VariableCount 5))
-                    VariableCount 4, zero
-                    VariableCount 5, ofInt 2
-                ]
-        )
+        |> Reify.withRespectToFirst
+        |> Seq.exactlyOne
+        |> Option.get
+        |> shouldEqual (ofInt 4)
 
         // Find n such that n + n = 4
         Goal.evaluate (Goal.callFresh (fun z -> pluso (Term.Variable z) (Term.Variable z) (ofInt 4)))
-        |> Stream.toList
-        |> List.exactlyOne
-        |> shouldEqual (
-            Map.ofList
-                [
-                    VariableCount 0, succ (Term.Variable (VariableCount 1))
-                    VariableCount 1, succ (Term.Variable (VariableCount 4))
-                    VariableCount 2, ofInt 3
-                    VariableCount 4, zero
-                    VariableCount 5, ofInt 2
-                ]
-        )
+        |> Reify.withRespectToFirst
+        |> Seq.exactlyOne
+        |> Option.get
+        |> shouldEqual (ofInt 2)
 
     type Nat =
         | Zero
@@ -167,8 +144,8 @@ module Arithmetic =
                 [
                     VariableCount 0, (ofInt 1 |> TypedTerm.compile)
                     VariableCount 1, (ofInt 3 |> TypedTerm.compile)
-                    VariableCount 3, TypedTerm.compile zero
-                    VariableCount 4, (ofInt 2 |> TypedTerm.compile)
+                    VariableCount 2, TypedTerm.compile zero
+                    VariableCount 3, (ofInt 2 |> TypedTerm.compile)
                 ]
         )
 
