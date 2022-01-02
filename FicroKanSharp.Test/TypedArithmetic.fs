@@ -1,6 +1,5 @@
 namespace FicroKanSharp.Test
 
-open System
 open FicroKanSharp
 open Xunit
 open FsUnitTyped
@@ -78,7 +77,7 @@ module TypedArithmetic =
 
         Goal.disj zeroCase succCase
 
-    //[<Fact>]
+    [<Fact>]
     let ``Arithmetic example using literals`` () =
         TypedTerm.Goal.callFresh (fun n -> // should be 1
             TypedTerm.Goal.callFresh (fun m -> // should be 3
@@ -162,12 +161,12 @@ module TypedArithmetic =
         // Find n such that n^2 + 2n + 1 = 4
         let one =
             TypedTerm.Goal.callFresh (fun n -> // n
-                TypedTerm.Goal.callFresh (fun nsquared -> // n^2
-                    TypedTerm.Goal.callFresh (fun twon -> // 2n
+                TypedTerm.Goal.callFresh (fun nSquared -> // n^2
+                    TypedTerm.Goal.callFresh (fun twoN -> // 2n
                         [
-                            pluso (Succ twon |> TypedTerm.literal) nsquared (Nat.Pure 4 |> TypedTerm.literal) // (2n+1) + n^2 = 4
-                            pluso n n twon // n+n=2n
-                            timeso n n nsquared // n*n=n^2
+                            pluso (Succ twoN |> TypedTerm.literal) nSquared (Nat.Pure 4 |> TypedTerm.literal) // (2n+1) + n^2 = 4
+                            pluso n n twoN // n+n=2n
+                            timeso n n nSquared // n*n=n^2
                         ]
                         |> Goal.all
                     )
@@ -185,12 +184,12 @@ module TypedArithmetic =
         // Find n such that n^2 + 2n + 1 = 49
         let six =
             TypedTerm.Goal.callFresh (fun n -> // n
-                TypedTerm.Goal.callFresh (fun nsquared -> // n^2
-                    TypedTerm.Goal.callFresh (fun twon -> // 2n
+                TypedTerm.Goal.callFresh (fun nSquared -> // n^2
+                    TypedTerm.Goal.callFresh (fun twoN -> // 2n
                         [
-                            pluso (Succ twon |> TypedTerm.literal) nsquared (Nat.Pure 49 |> TypedTerm.literal) // (2n+1) + n^2 = 4
-                            pluso n n twon // n+n=2n
-                            timeso n n nsquared // n*n=n^2
+                            pluso (Succ twoN |> TypedTerm.literal) nSquared (Nat.Pure 49 |> TypedTerm.literal) // (2n+1) + n^2 = 4
+                            pluso n n twoN // n+n=2n
+                            timeso n n nSquared // n*n=n^2
                         ]
                         |> Goal.all
                     )
