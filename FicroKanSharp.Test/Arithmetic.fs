@@ -13,10 +13,7 @@ module Arithmetic =
         let succ (x : Term) : Term = Term.Symbol ("succ", [ x ])
 
         let rec ofInt (n : int) : Term =
-            if n = 0 then
-                zero
-            else
-                succ (ofInt (n - 1))
+            if n = 0 then zero else succ (ofInt (n - 1))
 
         // "pluso x y z" is "x + y == z".
         let rec pluso (x : Term) (y : Term) (z : Term) : Goal =
@@ -125,7 +122,9 @@ module Arithmetic =
 
                         Goal.conj
                             (Goal.equiv (TypedTerm.compile x) (TypedTerm.compile (succ n)))
-                            (Goal.conj (Goal.equiv z (succ m |> TypedTerm.compile)) (Goal.delay (fun () -> pluso n y m)))
+                            (Goal.conj
+                                (Goal.equiv z (succ m |> TypedTerm.compile))
+                                (Goal.delay (fun () -> pluso n y m)))
                     )
                 )
 

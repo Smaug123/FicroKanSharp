@@ -86,8 +86,7 @@ module Goal =
             None
         else
         //(unify : Term -> Term -> bool option)
-        if unifyMethod.ReturnParameter.ParameterType
-           <> typeof<State option> then
+        if unifyMethod.ReturnParameter.ParameterType <> typeof<State option> then
             failwith
                 $"Incorrect unify return parameter should have been Option<State>: {unifyMethod.ReturnParameter.ParameterType}"
 
@@ -125,17 +124,7 @@ module Goal =
                 failwith $"Wrong parameters on Unify method of type {ty.Name}: {wrongParams}"
 
             let result =
-                unifyMethod.Invoke (
-                    name1,
-                    [|
-                        unify
-                        name1
-                        args1
-                        name2
-                        args2
-                        state
-                    |]
-                )
+                unifyMethod.Invoke (name1, [| unify ; name1 ; args1 ; name2 ; args2 ; state |])
                 |> unbox<State option>
 
             result
@@ -155,8 +144,7 @@ module Goal =
                 name1.GetType ()
                 |> fun ty ->
                     if FSharpType.IsUnion ty then
-                        if FSharpType.GetUnionCases ty
-                           |> Array.forall (fun i -> i.GetFields().Length = 0) then
+                        if FSharpType.GetUnionCases ty |> Array.forall (fun i -> i.GetFields().Length = 0) then
                             // reference enum
                             ty
                         else
