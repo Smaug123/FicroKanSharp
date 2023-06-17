@@ -166,8 +166,6 @@ module Goal =
                 else
                     customUnification ty name1 args1 name2 args2 s
 
-        | _, _ -> None
-
     let rec private evaluate' (debug : bool) (goal : Goal) (state : State) : Stream =
         if debug then
             let varState =
