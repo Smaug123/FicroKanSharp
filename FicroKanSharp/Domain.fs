@@ -16,10 +16,7 @@ type Term =
     override this.ToString () =
         match this with
         | Symbol (name, args) ->
-            let s =
-                args
-                |> List.map (sprintf "%O")
-                |> String.concat ", "
+            let s = args |> List.map (sprintf "%O") |> String.concat ", "
 
             $"{name}[{s}]"
         | Variable (VariableCount v) -> $"x{v}"
@@ -38,8 +35,7 @@ type Goal =
             if variableCount > 4 then
                 "<exists x: ...>"
             else
-                $"exists x{variableCount}: ({(g (VariableCount variableCount))
-                                                 .ToString (variableCount + 1)})"
+                $"exists x{variableCount}: ({(g (VariableCount variableCount)).ToString (variableCount + 1)})"
         | Conj (g1, g2) -> sprintf "((%s) AND (%s))" (g1.ToString variableCount) (g2.ToString variableCount)
         | Disj (g1, g2) -> sprintf "((%s) OR  (%s))" (g1.ToString variableCount) (g2.ToString variableCount)
         | Equiv (g1, g2) -> sprintf "(%O) == (%O)" g1 g2

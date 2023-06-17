@@ -26,4 +26,4 @@ jobs:
     - name: Install Fantomas
       run: dotnet tool restore
     - name: Run Fantomas
-      run: dotnet tool run fantomas --check -r .
+      run: dotnet tool run fantomas --check .

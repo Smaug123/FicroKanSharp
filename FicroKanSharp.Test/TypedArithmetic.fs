@@ -26,12 +26,7 @@ module TypedArithmetic =
                 if t2 = 0 then
                     None
                 else
-                    unify
-                        (TypedTerm.compile t1)
-                        (Pure (t2 - 1)
-                         |> TypedTerm.literal
-                         |> TypedTerm.compile)
-                        state
+                    unify (TypedTerm.compile t1) (Pure (t2 - 1) |> TypedTerm.literal |> TypedTerm.compile) state
             | Pure t1, Succ t2 ->
                 if t1 = 0 then
                     None
@@ -69,7 +64,8 @@ module TypedArithmetic =
             TypedTerm.Goal.callFresh (fun n ->
                 Goal.conj
                     (TypedTerm.Goal.equiv x (succ n))
-                    (TypedTerm.Goal.callFresh (fun ny -> Goal.conj (Goal.delay (fun () -> timeso n y ny)) (pluso y ny z)
+                    (TypedTerm.Goal.callFresh (fun ny ->
+                        Goal.conj (Goal.delay (fun () -> timeso n y ny)) (pluso y ny z)
                     ))
             )
 

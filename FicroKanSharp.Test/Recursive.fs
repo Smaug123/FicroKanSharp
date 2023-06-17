@@ -101,11 +101,7 @@ module Recursive =
         |> shouldEqual (
             Map.ofList
                 [
-                    VariableCount 0,
-                    TypedTerm.literal (Human "bridget")
-                    |> TypedTerm.compile
-                    VariableCount 1,
-                    TypedTerm.literal (Human "caroline")
-                    |> TypedTerm.compile
+                    VariableCount 0, TypedTerm.literal (Human "bridget") |> TypedTerm.compile
+                    VariableCount 1, TypedTerm.literal (Human "caroline") |> TypedTerm.compile
                 ]
         )

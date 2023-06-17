@@ -58,12 +58,7 @@ module TestThing =
         | None -> failwith "oh no"
         | Some (s, rest) ->
 
-        s
-        |> Map.toList
-        |> shouldEqual
-            [
-                Variable.VariableCount 0, Term.Symbol (5, [])
-            ]
+        s |> Map.toList |> shouldEqual [ Variable.VariableCount 0, Term.Symbol (5, []) ]
 
         match Stream.peel rest with
         | None -> ()
@@ -78,18 +73,9 @@ module TestThing =
         |> Stream.take 3
         |> shouldEqual
             [
-                Map.ofList
-                    [
-                        Variable.VariableCount 0, Term.Symbol (5, [])
-                    ]
-                Map.ofList
-                    [
-                        Variable.VariableCount 0, Term.Symbol (5, [])
-                    ]
-                Map.ofList
-                    [
-                        Variable.VariableCount 0, Term.Symbol (5, [])
-                    ]
+                Map.ofList [ Variable.VariableCount 0, Term.Symbol (5, []) ]
+                Map.ofList [ Variable.VariableCount 0, Term.Symbol (5, []) ]
+                Map.ofList [ Variable.VariableCount 0, Term.Symbol (5, []) ]
             ]
 
     [<Fact>]
@@ -108,45 +94,25 @@ module TestThing =
         | None -> failwith "oh no"
         | Some (s, rest) ->
 
-        s
-        |> Map.toList
-        |> shouldEqual
-            [
-                Variable.VariableCount 0, Term.Symbol (5, [])
-            ]
+        s |> Map.toList |> shouldEqual [ Variable.VariableCount 0, Term.Symbol (5, []) ]
 
         match Stream.peel rest with
         | None -> failwith "oh no"
         | Some (s, rest) ->
 
-        s
-        |> Map.toList
-        |> shouldEqual
-            [
-                Variable.VariableCount 0, Term.Symbol (6, [])
-            ]
+        s |> Map.toList |> shouldEqual [ Variable.VariableCount 0, Term.Symbol (6, []) ]
 
         match Stream.peel rest with
         | None -> failwith "oh no"
         | Some (s, rest) ->
 
-        s
-        |> Map.toList
-        |> shouldEqual
-            [
-                Variable.VariableCount 0, Term.Symbol (5, [])
-            ]
+        s |> Map.toList |> shouldEqual [ Variable.VariableCount 0, Term.Symbol (5, []) ]
 
         match Stream.peel rest with
         | None -> failwith "oh no"
         | Some (s, _rest) ->
 
-            s
-            |> Map.toList
-            |> shouldEqual
-                [
-                    Variable.VariableCount 0, Term.Symbol (6, [])
-                ]
+            s |> Map.toList |> shouldEqual [ Variable.VariableCount 0, Term.Symbol (6, []) ]
 
     /// This arose because x0 unified to x1, x1 unified to 1, but x0 didn't get reduced to 1 by `walk`.
     [<Fact>]

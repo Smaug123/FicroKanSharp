@@ -12,8 +12,8 @@ type TypedTerm<'a> =
 
 type private TermConstructor =
     {
-        Literal : obj [] -> obj
-        Term : obj [] -> obj
+        Literal : obj[] -> obj
+        Term : obj[] -> obj
     }
 
 type private FSharpUnionCase =
@@ -21,8 +21,8 @@ type private FSharpUnionCase =
         Name : string
         /// The PropertyInfo for the field, and the Literal case constructor of the TypedTerm
         /// if it is one
-        Fields : (PropertyInfo * Option<TermConstructor>) []
-        Constructor : obj [] -> obj
+        Fields : (PropertyInfo * Option<TermConstructor>)[]
+        Constructor : obj[] -> obj
     }
 
 [<NoComparison ; CustomEquality>]
@@ -37,9 +37,7 @@ type internal TypeName<'a when 'a : equality> =
 
     override this.Equals (other : obj) : bool =
         match other with
-        | :? TypeName<'a> as other ->
-            this.UserType = other.UserType
-            && this.FieldValue = other.FieldValue
+        | :? TypeName<'a> as other -> this.UserType = other.UserType && this.FieldValue = other.FieldValue
         | _ -> false
 
     override this.GetHashCode () = hash (this.UserType, this.FieldValue)
@@ -50,9 +48,7 @@ type internal TypeName<'a when 'a : equality> =
         | Some (cases, tagDiscriminator) ->
 
             if t1.FieldValue.GetType () = typeof<string> then
-                let case =
-                    cases
-                    |> Array.find (fun case -> case.Name = unbox<string> t1.FieldValue)
+                let case = cases |> Array.find (fun case -> case.Name = unbox<string> t1.FieldValue)
 
                 args
                 |> List.mapi (fun i term ->
@@ -65,11 +61,10 @@ type internal TypeName<'a when 'a : equality> =
                                 .GetType()
                                 .GetMethod(
                                     "Unbox",
-                                    BindingFlags.Public
-                                    ||| BindingFlags.NonPublic
-                                    ||| BindingFlags.Instance
+                                    BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
                                 )
-                                .MakeGenericMethod typeof<obj>
+                                .MakeGenericMethod
+                                typeof<obj>
 
                         let unboxed = mi.Invoke (name, [||]) |> unbox<TypeName<obj>>
 
@@ -110,8 +105,7 @@ type internal TypeName<'a when 'a : equality> =
             None
         else
 
-        if unifyMethod.ReturnParameter.ParameterType
-           <> typeof<State option> then
+        if unifyMethod.ReturnParameter.ParameterType <> typeof<State option> then
             failwith
                 $"Incorrect unify return parameter should have been Option<State>: {unifyMethod.ReturnParameter.ParameterType}"
 
@@ -169,24 +163,23 @@ module TypedTerm =
     let literal<'a> (t : 'a) : TypedTerm<'a> = TypedTerm.Literal t
 
     let resolveGeneric (t : Type) : Type =
-        if t.IsGenericType then
-            t.GetGenericTypeDefinition ()
-        else
-            t
+        if t.IsGenericType then t.GetGenericTypeDefinition () else t
 
     let rec private toUntypedLiteral' (ty : Type) : obj -> Term =
         if ty = typeof<Variable> then
             fun t -> Term.Variable (unbox t)
         elif FSharpType.IsUnion ty then
-            let toTermList (o : obj []) : Term list =
+            let toTermList (o : obj[]) : Term list =
                 o
                 |> List.ofArray
                 |> List.map (fun (o : obj) ->
                     let ty = o.GetType ()
 
-                    if ty.BaseType.IsGenericType
-                       && ty.BaseType.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>>.GetGenericTypeDefinition
-                           () then
+                    if
+                        ty.BaseType.IsGenericType
+                        && ty.BaseType.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>>
+                            .GetGenericTypeDefinition ()
+                    then
                         o |> compileUntyped ty.GenericTypeArguments.[0]
                     else
                         toUntypedLiteral o
@@ -208,8 +201,7 @@ module TypedTerm =
                                 let ty = pi.PropertyType
 
                                 let isTypedTerm =
-                                    ty.IsGenericType
-                                    && ty.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>>
+                                    ty.IsGenericType && ty.GetGenericTypeDefinition () = typedefof<TypedTerm<obj>>
 
                                 let constructor =
                                     if isTypedTerm then
@@ -240,10 +232,7 @@ module TypedTerm =
             fun t ->
                 let case = cases.[precomputed t]
 
-                let values =
-                    case.Fields
-                    |> Array.map (fun (pi, _) -> pi.GetValue t)
-                    |> toTermList
+                let values = case.Fields |> Array.map (fun (pi, _) -> pi.GetValue t) |> toTermList
 
                 Term.Symbol (
                     {
