@@ -14,9 +14,4 @@
         <Compile Include="Typed.fs" />
         <Compile Include="Reify.fs" />
     </ItemGroup>
-    
-    <ItemGroup>
-        <PackageReference Include="TeqCrate" Version="0.1.5" />
-    </ItemGroup>
-
 </Project>
