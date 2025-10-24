@@ -59,7 +59,7 @@
           doCheck = true;
         };
       };
-      devShell = pkgs.mkShell {
+      devShells.default = pkgs.mkShell {
         buildInputs = [dotnet-sdk];
         packages = [
           pkgs.alejandra
