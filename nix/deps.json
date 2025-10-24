@@ -5,6 +5,11 @@
     "hash": "sha256-0XlfV7SxXPDnk/CjkUesJSaH0cxlNHJ+Jj86zNUhkNA="
   },
   {
+    "pname": "fsharp-analyzers",
+    "version": "0.33.1",
+    "hash": "sha256-vYXvqnf3en487svFv3CmNl24SolwMYzu6zKKGXNxSu8="
+  },
+  {
     "pname": "FsUnit",
     "version": "7.1.1",
     "hash": "sha256-UMCEGKxQ4ytjmPuVpiNaAPbi3RQH9gqa61JJIUS/6hg="
