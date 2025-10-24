@@ -1,0 +1,172 @@
+[
+  {
+    "pname": "fantomas",
+    "version": "7.0.3",
+    "hash": "sha256-0XlfV7SxXPDnk/CjkUesJSaH0cxlNHJ+Jj86zNUhkNA="
+  },
+  {
+    "pname": "FsUnit",
+    "version": "7.1.1",
+    "hash": "sha256-UMCEGKxQ4ytjmPuVpiNaAPbi3RQH9gqa61JJIUS/6hg="
+  },
+  {
+    "pname": "Microsoft.ApplicationInsights",
+    "version": "2.23.0",
+    "hash": "sha256-5sf3bg7CZZjHseK+F3foOchEhmVeioePxMZVvS6Rjb0="
+  },
+  {
+    "pname": "Microsoft.AspNetCore.App.Ref",
+    "version": "6.0.36",
+    "hash": "sha256-9jDkWbjw/nd8yqdzVTagCuqr6owJ/DUMi4BlUZT4hWU="
+  },
+  {
+    "pname": "Microsoft.AspNetCore.App.Runtime.linux-arm64",
+    "version": "6.0.36",
+    "hash": "sha256-JQULJyF0ivLoUU1JaFfK/HHg+/qzpN7V2RR2Cc+WlQ4="
+  },
+  {
+    "pname": "Microsoft.AspNetCore.App.Runtime.linux-x64",
+    "version": "6.0.36",
+    "hash": "sha256-zUsVIpV481vMLAXaLEEUpEMA9/f1HGOnvaQnaWdzlyY="
+  },
+  {
+    "pname": "Microsoft.AspNetCore.App.Runtime.osx-arm64",
+    "version": "6.0.36",
+    "hash": "sha256-2seqZcz0JeUjkzh3QcGa9TcJ4LUafpFjTRk+Nm8T6T0="
+  },
+  {
+    "pname": "Microsoft.AspNetCore.App.Runtime.osx-x64",
+    "version": "6.0.36",
+    "hash": "sha256-yxLafxiBKkvfkDggPk0P9YZIHBkDJOsFTO7/V9mEHuU="
+  },
+  {
+    "pname": "Microsoft.CodeCoverage",
+    "version": "18.0.0",
+    "hash": "sha256-1RNxheCYASMusDC48BXtaO3MhnInw15JVfjfLM1VMGA="
+  },
+  {
+    "pname": "Microsoft.NET.Test.Sdk",
+    "version": "18.0.0",
+    "hash": "sha256-9iW+9mvMeZgDXwSoR08bnvRNsN4jT8OVWcjq3lcE+cs="
+  },
+  {
+    "pname": "Microsoft.NETCore.App.Host.linux-arm64",
+    "version": "6.0.36",
+    "hash": "sha256-9lC/LYnthYhjkWWz2kkFCvlA5LJOv11jdt59SDnpdy0="
+  },
+  {
+    "pname": "Microsoft.NETCore.App.Host.linux-x64",
+    "version": "6.0.36",
+    "hash": "sha256-VFRDzx7LJuvI5yzKdGmw/31NYVbwHWPKQvueQt5xc10="
+  },
+  {
+    "pname": "Microsoft.NETCore.App.Host.osx-arm64",
+    "version": "6.0.36",
+    "hash": "sha256-DaSWwYACJGolEBuMhzDVCj/rQTdDt061xCVi+gyQnuo="
+  },
+  {
+    "pname": "Microsoft.NETCore.App.Host.osx-x64",
+    "version": "6.0.36",
+    "hash": "sha256-FrRny9EI6HKCKQbu6mcLj5w4ooSRrODD4Vj2ZMGnMd4="
+  },
+  {
+    "pname": "Microsoft.NETCore.App.Ref",
+    "version": "6.0.36",
+    "hash": "sha256-9LZgVoIFF8qNyUu8kdJrYGLutMF/cL2K82HN2ywwlx8="
+  },
+  {
+    "pname": "Microsoft.NETCore.App.Runtime.linux-arm64",
+    "version": "6.0.36",
+    "hash": "sha256-k3rxvUhCEU0pVH8KgEMtkPiSOibn+nBh+0zT2xIfId8="
+  },
+  {
+    "pname": "Microsoft.NETCore.App.Runtime.linux-x64",
+    "version": "6.0.36",
+    "hash": "sha256-U8wJ2snSDFqeAgDVLXjnniidC7Cr5aJ1/h/BMSlyu0c="
+  },
+  {
+    "pname": "Microsoft.NETCore.App.Runtime.osx-arm64",
+    "version": "6.0.36",
+    "hash": "sha256-UfLcrL2Gj/OLz0s92Oo+OCJeDpZFAcQLPLiSNND8D5Y="
+  },
+  {
+    "pname": "Microsoft.NETCore.App.Runtime.osx-x64",
+    "version": "6.0.36",
+    "hash": "sha256-0xIJYFzxdMcnCj3wzkFRQZSnQcPHzPHMzePRIOA3oJs="
+  },
+  {
+    "pname": "Microsoft.Testing.Extensions.Telemetry",
+    "version": "1.9.0",
+    "hash": "sha256-JT91ThKLEyoRS/8ZJqZwlSTT7ofC2QhNqPFI3pYmMaw="
+  },
+  {
+    "pname": "Microsoft.Testing.Extensions.TrxReport.Abstractions",
+    "version": "1.9.0",
+    "hash": "sha256-oscZOEKw7gM6eRdDrOS3x+CwqIvXWRmfmi0ugCxBRw0="
+  },
+  {
+    "pname": "Microsoft.Testing.Extensions.VSTestBridge",
+    "version": "1.9.0",
+    "hash": "sha256-CadXLWD093sUDaWhnppzD9LvpxSRqqt93ZEOFiIAPyw="
+  },
+  {
+    "pname": "Microsoft.Testing.Platform",
+    "version": "1.9.0",
+    "hash": "sha256-6nzjoYbJOh7v/GB7d+TDuM0l/xglCshFX6KWjg7+cFI="
+  },
+  {
+    "pname": "Microsoft.Testing.Platform.MSBuild",
+    "version": "1.9.0",
+    "hash": "sha256-/bileP4b+9RZp8yjgS6eynXwc2mohyyzf6p/0LZJd8I="
+  },
+  {
+    "pname": "Microsoft.TestPlatform.AdapterUtilities",
+    "version": "17.13.0",
+    "hash": "sha256-Vr+3Tad/h/nk7f/5HMExn3HvCGFCarehFAzJSfCBaOc="
+  },
+  {
+    "pname": "Microsoft.TestPlatform.ObjectModel",
+    "version": "17.13.0",
+    "hash": "sha256-6S0fjfj8vA+h6dJVNwLi6oZhYDO/I/6hBZaq2VTW+Uk="
+  },
+  {
+    "pname": "Microsoft.TestPlatform.ObjectModel",
+    "version": "18.0.0",
+    "hash": "sha256-O/ivHdoIO+q1n0byJ9OZO4quOqACOD3K3Qm00wfhuZk="
+  },
+  {
+    "pname": "Microsoft.TestPlatform.TestHost",
+    "version": "18.0.0",
+    "hash": "sha256-qAIX2Rqxrnh1xaYRjCbkkvvMm407oyKihqyVjURX5wY="
+  },
+  {
+    "pname": "Newtonsoft.Json",
+    "version": "13.0.3",
+    "hash": "sha256-hy/BieY4qxBWVVsDqqOPaLy1QobiIapkbrESm6v2PHc="
+  },
+  {
+    "pname": "NUnit",
+    "version": "4.4.0",
+    "hash": "sha256-5geF5QOF+X/WkuCEgkPVKH4AdKx4U0olpU07S8+G3nU="
+  },
+  {
+    "pname": "NUnit3TestAdapter",
+    "version": "5.2.0",
+    "hash": "sha256-ybTutL4VkX/fq61mS+O3Ruh+adic4fpv+MKgQ0IZvGg="
+  },
+  {
+    "pname": "System.Collections.Immutable",
+    "version": "8.0.0",
+    "hash": "sha256-F7OVjKNwpqbUh8lTidbqJWYi476nsq9n+6k0+QVRo3w="
+  },
+  {
+    "pname": "System.Diagnostics.DiagnosticSource",
+    "version": "5.0.0",
+    "hash": "sha256-6mW3N6FvcdNH/pB58pl+pFSCGWgyaP4hfVtC/SMWDV4="
+  },
+  {
+    "pname": "System.Reflection.Metadata",
+    "version": "8.0.0",
+    "hash": "sha256-dQGC30JauIDWNWXMrSNOJncVa1umR1sijazYwUDdSIE="
+  }
+]

@@ -2,8 +2,9 @@ namespace FicroKanSharp.Test
 
 open FicroKanSharp
 open FsUnitTyped
-open Xunit
+open NUnit.Framework
 
+[<TestFixture>]
 module TestCustomUnification =
 
     [<RequireQualifiedAccess>]
@@ -27,7 +28,7 @@ module TestCustomUnification =
             =
             Some state
 
-    [<Fact>]
+    [<Test>]
     let ``Type with custom unification`` () =
         Goal.equiv (Term.Symbol (Int.Case1, [])) (Term.Symbol (Int.Case2, []))
         |> Goal.evaluate
@@ -94,7 +95,7 @@ module TestCustomUnification =
         else
             Term.Symbol (Peano.Succ, [ toTerm (n - 1) ])
 
-    [<Fact>]
+    [<Test>]
     let ``A custom augmented Peano naturals type`` () =
         Goal.equiv (Term.Symbol (Peano.Pure 5, [])) (toTerm 5)
         |> Goal.evaluate

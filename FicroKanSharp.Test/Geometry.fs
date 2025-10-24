@@ -4,8 +4,9 @@ namespace FicroKanSharp.Test
 
 open FsUnitTyped
 open FicroKanSharp
-open Xunit
+open NUnit.Framework
 
+[<TestFixture>]
 module Geometry =
 
     type Point<'a> = Point of TypedTerm<'a> * TypedTerm<'a>
@@ -34,7 +35,7 @@ module Geometry =
             |> TypedTerm.Goal.callFresh
         |> TypedTerm.Goal.callFresh
 
-    [<Fact>]
+    [<Test>]
     let ``Geometry example from Learn Prolog Now`` () =
         Line (
             TypedTerm.Literal (Point (TypedTerm.Literal 1, TypedTerm.Literal 1)),

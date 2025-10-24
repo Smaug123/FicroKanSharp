@@ -2,11 +2,12 @@ namespace FicroKanSharp.Test
 
 open FicroKanSharp
 open FsUnitTyped
-open Xunit
+open NUnit.Framework
 
+[<TestFixture>]
 module Arithmetic =
 
-    [<Fact>]
+    [<Test>]
     let ``Arithmetic example, untyped`` () =
         let zero : Term = Term.Symbol ("zero", [])
 
@@ -76,7 +77,7 @@ module Arithmetic =
         | Zero
         | Succ of TypedTerm<Nat>
 
-    [<Fact>]
+    [<Test>]
     let ``Arithmetic example, typed`` () =
         let rec ofInt (n : int) : TypedTerm<Nat> =
             if n = 0 then
