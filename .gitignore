@@ -7,3 +7,5 @@ riderModule.iml
 *.user
 *.DotSettings
 .DS_Store
+.direnv/
+result

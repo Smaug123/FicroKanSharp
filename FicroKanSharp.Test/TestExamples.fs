@@ -1,12 +1,13 @@
 namespace FicroKanSharp.Test
 
 open FicroKanSharp
-open Xunit
 open FsUnitTyped
+open NUnit.Framework
 
+[<TestFixture>]
 module TestThing =
 
-    [<Fact>]
+    [<Test>]
     let ``Example from the docs`` () : unit =
         let aAndB =
             Goal.conj
@@ -47,7 +48,7 @@ module TestThing =
         | None -> ()
         | Some s -> failwith $"{s}"
 
-    [<Fact>]
+    [<Test>]
     let ``Another example`` () =
         let aAndB =
             (Goal.callFresh (fun x -> Goal.equiv (Term.Variable x) (Term.Symbol (5, []))))
@@ -64,7 +65,7 @@ module TestThing =
         | None -> ()
         | Some s -> failwithf $"{s}"
 
-    [<Fact>]
+    [<Test>]
     let ``Recursive example`` () =
         let rec fives (x : Variable) =
             (Goal.disj (Goal.equiv (Term.Variable x) (Term.Symbol (5, []))) (Goal.delay (fun () -> fives x)))
@@ -78,7 +79,7 @@ module TestThing =
                 Map.ofList [ Variable.VariableCount 0, Term.Symbol (5, []) ]
             ]
 
-    [<Fact>]
+    [<Test>]
     let ``Another recursive example`` () =
         let rec fives (x : Variable) =
             (Goal.disj (Goal.equiv (Term.Variable x) (Term.Symbol (5, []))) (Goal.delay (fun () -> fives x)))
@@ -115,7 +116,7 @@ module TestThing =
             s |> Map.toList |> shouldEqual [ Variable.VariableCount 0, Term.Symbol (6, []) ]
 
     /// This arose because x0 unified to x1, x1 unified to 1, but x0 didn't get reduced to 1 by `walk`.
-    [<Fact>]
+    [<Test>]
     let ``Unification works transitively`` () =
         Goal.callFresh (fun twon -> // 0
 

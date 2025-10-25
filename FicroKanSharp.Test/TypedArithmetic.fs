@@ -1,9 +1,10 @@
 namespace FicroKanSharp.Test
 
 open FicroKanSharp
-open Xunit
+open NUnit.Framework
 open FsUnitTyped
 
+[<TestFixture>]
 module TypedArithmetic =
 
     type Nat =
@@ -73,7 +74,7 @@ module TypedArithmetic =
 
         Goal.disj zeroCase succCase
 
-    [<Fact>]
+    [<Test>]
     let ``Arithmetic example using literals`` () =
         TypedTerm.Goal.callFresh (fun n -> // should be 1
             TypedTerm.Goal.callFresh (fun m -> // should be 3
@@ -139,7 +140,7 @@ module TypedArithmetic =
         |> Reify.satisfiableExactlyOnce
         |> shouldEqual true
 
-    [<Fact>]
+    [<Test>]
     let ``Test times`` () : unit =
 
         // Evaluate 3 * 3

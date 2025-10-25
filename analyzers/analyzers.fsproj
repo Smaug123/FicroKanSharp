@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.Build.NoTargets/1.0.80"> <!-- This is not a project we want to build. -->
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+    <RestorePackagesPath>../.analyzerpackages/</RestorePackagesPath>
+    <TargetFramework>net6.0</TargetFramework>
+    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+    <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages> <!-- We don't want to build this project, so we do not need the reference assemblies for the framework we chose.-->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageDownload Include="G-Research.FSharp.Analyzers" Version="[0.19.0]" />
+    <PackageDownload Include="WoofWare.FSharpAnalyzers" Version="[0.2.1]" />
+  </ItemGroup>
+
+</Project>

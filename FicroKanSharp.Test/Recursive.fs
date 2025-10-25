@@ -1,9 +1,10 @@
 namespace FicroKanSharp.Test
 
-open Xunit
+open NUnit.Framework
 open FsUnitTyped
 open FicroKanSharp
 
+[<TestFixture>]
 module Recursive =
 
     type Entity =
@@ -13,7 +14,7 @@ module Recursive =
         | Blood of TypedTerm<Entity>
         | Name of TypedTerm<string>
 
-    [<Fact>]
+    [<Test>]
     let ``Recursive definitions, example 1`` () : unit =
         let justAte (t1 : TypedTerm<Entity>) (t2 : TypedTerm<Entity>) : Goal =
             Goal.disj
@@ -58,7 +59,7 @@ module Recursive =
 
     type Human = Human of string
 
-    [<Fact>]
+    [<Test>]
     let ``Recursive definitions, example 2`` () : unit =
         let children =
             [
